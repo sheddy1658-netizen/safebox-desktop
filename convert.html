@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convert - SafeBox</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .converter-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 24px;
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+        .convert-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .convert-form label {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .convert-form select,
+        .convert-form input[type="file"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.9);
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .convert-form select:focus,
+        .convert-form input[type="file"]:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .convert-form select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .convert-form .full-width {
+            grid-column: 1 / -1;
+        }
+        .quality-control {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .quality-control input[type="range"] {
+            flex: 1;
+            accent-color: #667eea;
+        }
+        .quality-control span {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            min-width: 40px;
+        }
+        .quality-presets {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .quality-presets .btn {
+            padding: 4px 12px;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a6fd6;
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .progress-bar .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+        .batch-item {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .batch-item .status {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .batch-item .status.pending { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+        .batch-item .status.processing { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .batch-item .status.done { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .batch-item .status.error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+        .format-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .format-card h4 { color: rgba(255,255,255,0.85); margin-bottom: 4px; }
+        .format-card p { font-size: 12px; color: rgba(255, 255, 255, 0.4); }
+        .format-card strong { color: rgba(255, 255, 255, 0.7); }
+
+        .batch-section {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 20px;
+            border-radius: 16px;
+        }
+        .batch-section h3 { color: rgba(255,255,255,0.85); }
+        .batch-section p { font-size: 12px; color: rgba(255, 255, 255, 0.4); }
+        .batch-section input[type="file"] {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            width: 100%;
+            font-family: inherit;
+        }
+
+        .result-success {
+            background: rgba(16, 185, 129, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+        }
+        .result-success h3 { margin: 0; color: #34d399; }
+        .result-success p { margin: 8px 0 0; color: #34d399; }
+
+        .output-options {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+        }
+        .output-options h3 {
+            margin: 0 0 10px 0;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 15px;
+        }
+        .output-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .output-grid label {
+            display: block;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .output-grid input[type="text"],
+        .output-grid select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.9);
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .output-grid input[type="text"]:focus,
+        .output-grid select:focus {
+            border-color: #667eea;
+        }
+        .output-grid input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .output-grid select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .output-toggles {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.2s;
+        }
+        .toggle-row:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+        .toggle-row input[type="checkbox"] {
+            accent-color: #667eea;
+            margin: 0;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .output-hint {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(102, 126, 234, 0.08);
+            border-left: 3px solid #667eea;
+            border-radius: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .output-hint strong {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .net-notice {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: rgba(245, 158, 11, 0.08);
+            border-left: 3px solid #f59e0b;
+            border-radius: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.75);
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .net-notice.show { display: flex; }
+        .net-notice .icon { font-size: 16px; flex-shrink: 0; line-height: 1.2; }
+        .net-notice .msg { flex: 1; }
+        .net-notice .msg strong { color: #fbbf24; }
+        .net-notice.ready {
+            background: rgba(16, 185, 129, 0.08);
+            border-left-color: #10b981;
+        }
+        .net-notice.ready .msg strong { color: #34d399; }
+        .net-notice .close-note {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+            flex-shrink: 0;
+        }
+        .net-notice .close-note:hover { color: #fff; }
+
+        .fallback-banner {
+            background: rgba(239, 68, 68, 0.15);
+            border-left: 4px solid #ef4444;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #fca5a5;
+        }
+
+        @media (max-width: 600px) {
+            .convert-form { grid-template-columns: 1fr; }
+            .output-grid { grid-template-columns: 1fr; }
+            .output-toggles { grid-template-columns: 1fr; }
+        }
+
+        /* ✅ Sidebar compat — LEFT side */
+        .app-container header { padding-left: 60px !important; padding-right: 14px !important; }
+        .app-container header h1 { margin: 0 !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>📦 SafeBox</h1>
+            <!-- ✅ Old nav removed — sidebar.js injects hamburger menu (left) -->
+        </header>
+        <main>
+            <!-- ✅ Intro + converter-info removed -->
+
+            <!-- Regular Converter -->
+            <div class="converter-section">
+                <h3 style="margin: 0 0 12px 0; color: rgba(255,255,255,0.85);">🔄 Convert File</h3>
+                <div class="convert-form">
+                    <div class="full-width">
+                        <label>📁 Select File</label>
+                        <input type="file" id="convertFileInput" accept="*/*">
+                        <div id="convertFileName" style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;"></div>
+                        <div id="convertFileSize" style="font-size:12px;color:rgba(255,255,255,0.4);"></div>
+                        <div id="convertFileInfo" style="font-size:12px;color:rgba(255,255,255,0.4);"></div>
+                    </div>
+                    
+                    <div>
+                        <label>🔄 Convert From</label>
+                        <select id="convertFrom">
+                            <option value="image">🖼️ Images</option>
+                            <option value="document">📄 Documents</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label>🎯 Convert To</label>
+                        <select id="convertTo">
+                            <!-- Populated by JS -->
+                        </select>
+                        <!-- ✅ Internet-needed notice -->
+                        <div class="net-notice" id="netNotice">
+                            <span class="icon">🌐</span>
+                            <div class="msg" id="netNoticeMsg">
+                                This format requires downloading an encoder the first time. Internet connection needed.
+                            </div>
+                            <button class="close-note" type="button" onclick="document.getElementById('netNotice').classList.remove('show')">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- Quality -->
+                    <div class="full-width">
+                        <label>📊 Quality <span style="font-weight:400;color:rgba(255,255,255,0.4);font-size:12px;">(applies to JPG &amp; WebP only)</span></label>
+                        <div class="quality-control">
+                            <input type="range" id="qualitySlider" min="1" max="100" value="80">
+                            <span id="qualityValue">80%</span>
+                        </div>
+                        <div class="quality-presets">
+                            <button onclick="setQuality(25)" class="btn">Low</button>
+                            <button onclick="setQuality(50)" class="btn">Medium</button>
+                            <button onclick="setQuality(80)" class="btn">High</button>
+                            <button onclick="setQuality(100)" class="btn">Maximum</button>
+                        </div>
+                    </div>
+
+                    <!-- ✅ Output Options -->
+                    <div class="full-width output-options" id="outputOptions">
+                        <h3>📥 Output Options</h3>
+
+                        <div class="output-grid">
+                            <div>
+                                <label for="outputName">📝 Output Filename</label>
+                                <input type="text" id="outputName" placeholder="Leave blank for auto-name">
+                            </div>
+
+                            <div>
+                                <label for="outputLocation">📁 Save Location</label>
+                                <select id="outputLocation">
+                                    <option value="download">⬇️ Download to device</option>
+                                    <option value="files">📁 Save to My Files</option>
+                                    <option value="both" selected>⬇️📁 Both (download + save)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="outputFormat">🎯 Output Format</label>
+                                <select id="outputFormat">
+                                    <option value="">Same as Convert To</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="output-toggles">
+                            <label class="toggle-row">
+                                <input type="checkbox" id="optOverwrite">
+                                <span>♻️ Overwrite existing file</span>
+                            </label>
+                            <label class="toggle-row">
+                                <input type="checkbox" id="optDeleteSource">
+                                <span>🗑️ Delete source file after conversion</span>
+                            </label>
+                            <label class="toggle-row">
+                                <input type="checkbox" id="optOpenAfter" checked>
+                                <span>👁️ Open file after conversion</span>
+                            </label>
+                            <label class="toggle-row">
+                                <input type="checkbox" id="optNotify" checked>
+                                <span>🔔 Show notification when done</span>
+                            </label>
+                        </div>
+
+                        <div class="output-hint" id="outputHint">
+                            💡 Converted files are downloaded automatically and saved to <strong>My Files</strong>.
+                        </div>
+                    </div>
+
+                    <div class="full-width" style="display:flex;gap:10px;">
+                        <button onclick="convertFileUI()" class="btn btn-primary" style="flex:1;" id="convertBtn">
+                            🔄 Convert &amp; Download
+                        </button>
+                        <button onclick="resetConverter()" class="btn" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);">🔄 Reset</button>
+                    </div>
+                </div>
+
+                <div id="convertProgressContainer" style="display:none;margin-top:15px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="convertProgressBar" style="width:0%"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <p id="convertProgressText" style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">0%</p>
+                        <p id="convertStatus" style="font-size:12px;color:rgba(255,255,255,0.4);">Starting...</p>
+                    </div>
+                </div>
+
+                <div id="convertResult" style="margin-top:20px;display:none;">
+                    <div class="result-success">
+                        <h3>✅ Conversion Complete</h3>
+                        <p id="convertMessage"></p>
+                        <div id="convertedPreview" style="margin-top:12px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Conversion -->
+            <div class="batch-section">
+                <h3>📦 Batch Conversion</h3>
+                <p>Convert multiple files at once!</p>
+                <input type="file" id="batchFileInput" multiple>
+                <button onclick="batchConvertFiles()" class="btn btn-primary" style="margin-top:10px;">⚡ Convert All</button>
+                <div id="batchResults" style="margin-top:10px;"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/converter.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+        // ============================================
+        // FALLBACK FORMAT TABLES
+        // ============================================
+        const FALLBACK_FORMATS = {
+            image: [
+                { value: 'jpg',  label: '📷 JPEG (.jpg)' },
+                { value: 'png',  label: '🖼️ PNG (.png)' },
+                { value: 'webp', label: '🌐 WebP (.webp)' },
+                { value: 'pdf',  label: '📄 PDF (.pdf) 🌐' }
+            ],
+            document: [
+                { value: 'pdf',  label: '📄 PDF (.pdf) 🌐' },
+                { value: 'txt',  label: '📝 Plain Text (.txt)' },
+                { value: 'html', label: '🌐 HTML (.html)' },
+                { value: 'csv',  label: '📊 CSV (.csv)' },
+                { value: 'json', label: '📋 JSON (.json)' },
+                { value: 'xml',  label: '📐 XML (.xml)' }
+            ]
+        };
+
+        // ============================================
+        // POPULATE "CONVERT TO" DROPDOWN (fallback)
+        // ============================================
+        function populateConvertTo(sourceType) {
+            const select = document.getElementById('convertTo');
+            if (!select) return;
+
+            const formats = FALLBACK_FORMATS[sourceType] || FALLBACK_FORMATS.image;
+            select.innerHTML = '';
+            formats.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.value;
+                opt.textContent = f.label;
+                select.appendChild(opt);
+            });
+            select.dataset.sourceType = sourceType;
+
+            syncOutputFormatOptions();
+        }
+
+        // ============================================
+        // ✅ INTERNET-NEEDED NOTICE
+        // ============================================
+        function refreshInternetNotice() {
+            const select = document.getElementById('convertTo');
+            const notice = document.getElementById('netNotice');
+            const msg = document.getElementById('netNoticeMsg');
+            if (!select || !notice || !msg) return;
+
+            const format = select.value;
+            const needsNet = (typeof window.formatNeedsInternet === 'function')
+                ? window.formatNeedsInternet(format)
+                : false;
+
+            if (!needsNet) {
+                notice.classList.remove('show');
+                return;
+            }
+
+            const ready = (typeof window.isEncoderReady === 'function')
+                ? window.isEncoderReady(format)
+                : false;
+
+            const info = (window.getFormatInfo && window.getFormatInfo(format)) || null;
+            const label = info ? info.label : format.toUpperCase();
+
+            if (ready) {
+                notice.classList.add('ready');
+                msg.innerHTML = `<strong>${label}</strong> encoder is ready — no internet needed this session.`;
+            } else {
+                notice.classList.remove('ready');
+                msg.innerHTML = `Converting to <strong>${label}</strong> requires downloading a small encoder the first time. <strong>Internet connection needed.</strong> After it loads once, it stays cached for this session.`;
+            }
+            notice.classList.add('show');
+        }
+        window.refreshInternetNotice = refreshInternetNotice;
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const fromSelect = document.getElementById('convertFrom');
+
+            // 1) Populate fallback dropdowns immediately
+            const initialType = fromSelect?.value || 'image';
+            populateConvertTo(initialType);
+
+            // 2) React to source-type change
+            if (fromSelect) {
+                fromSelect.addEventListener('change', function() {
+                    const type = this.value;
+                    populateConvertTo(type);
+                    if (typeof window.onConvertFromChange === 'function') {
+                        window.onConvertFromChange(type);
+                    }
+                    refreshInternetNotice();
+                });
+            }
+
+            // 3) Try to init the real converter UI (if converter.js loaded)
+            if (typeof initConverterUI === 'function') {
+                initConverterUI();
+                setTimeout(() => {
+                    const sel = document.getElementById('convertTo');
+                    if (sel && sel.options.length === 0) {
+                        populateConvertTo(document.getElementById('convertFrom')?.value || 'image');
+                    }
+                }, 400);
+            } else {
+                console.error('❌ converter.js not loaded — using fallback UI');
+                const banner = document.createElement('div');
+                banner.className = 'fallback-banner';
+                banner.textContent = '⚠️ converter.js failed to load. Buttons may not work. Check that js/converter.js exists in your assets folder.';
+                document.querySelector('main')?.prepend(banner);
+            }
+
+            // 4) Keep output format in sync with "Convert To"
+            syncOutputFormatOptions();
+            setTimeout(syncOutputFormatOptions, 300);
+            const toSelectForSync = document.getElementById('convertTo');
+            if (toSelectForSync) {
+                const observer = new MutationObserver(syncOutputFormatOptions);
+                observer.observe(toSelectForSync, { childList: true });
+            }
+
+            // 5) Contextual hint for save location
+            const locSelect = document.getElementById('outputLocation');
+            const hint = document.getElementById('outputHint');
+            if (locSelect && hint) {
+                locSelect.addEventListener('change', function() {
+                    switch (this.value) {
+                        case 'download':
+                            hint.innerHTML = '⬇️ Converted file will be <strong>downloaded</strong> to your device.';
+                            break;
+                        case 'files':
+                            hint.innerHTML = '📁 Converted file will be saved to <strong>My Files</strong> inside SafeBox.';
+                            break;
+                        default:
+                            hint.innerHTML = '⬇️📁 File will be <strong>downloaded</strong> and saved to <strong>My Files</strong>.';
+                    }
+                });
+            }
+
+            // 6) ✅ Internet-needed notice — watch the Convert To dropdown
+            const toSelect = document.getElementById('convertTo');
+            if (toSelect) {
+                toSelect.addEventListener('change', refreshInternetNotice);
+                const toObserver = new MutationObserver(refreshInternetNotice);
+                toObserver.observe(toSelect, { childList: true });
+                setTimeout(refreshInternetNotice, 600);
+            }
+
+            // 7) Re-check the notice whenever the page becomes visible
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) refreshInternetNotice();
+            });
+        });
+
+        // ============================================
+        // QUALITY PRESETS
+        // ============================================
+        function setQuality(value) {
+            const slider = document.getElementById('qualitySlider');
+            if (slider) {
+                slider.value = value;
+                document.getElementById('qualityValue').textContent = value + '%';
+            }
+        }
+
+        // ============================================
+        // OUTPUT OPTIONS
+        // ============================================
+        function getOutputOptions() {
+            return {
+                filename: (document.getElementById('outputName')?.value || '').trim(),
+                location: document.getElementById('outputLocation')?.value || 'both',
+                format: document.getElementById('outputFormat')?.value || '',
+                overwrite: !!document.getElementById('optOverwrite')?.checked,
+                deleteSource: !!document.getElementById('optDeleteSource')?.checked,
+                openAfter: !!document.getElementById('optOpenAfter')?.checked,
+                notify: !!document.getElementById('optNotify')?.checked
+            };
+        }
+        window.getOutputOptions = getOutputOptions;
+
+        // ✅ Output Format dropdown mirrors the "Convert To" selection
+        function syncOutputFormatOptions() {
+            const convertTo = document.getElementById('convertTo');
+            const outputFormat = document.getElementById('outputFormat');
+            if (!convertTo || !outputFormat) return;
+
+            const currentValue = outputFormat.value;
+            outputFormat.innerHTML = '<option value="">Same as Convert To</option>';
+
+            Array.from(convertTo.options).forEach(opt => {
+                if (!opt.value) return;
+                const optEl = document.createElement('option');
+                optEl.value = opt.value;
+                optEl.textContent = opt.textContent;
+                outputFormat.appendChild(optEl);
+            });
+
+            if (currentValue) {
+                const stillThere = Array.from(outputFormat.options).some(o => o.value === currentValue);
+                if (stillThere) outputFormat.value = currentValue;
+            }
+        }
+
+        // ============================================
+        // LOGOUT FALLBACK
+        // ============================================
+        function logoutUser() {
+            if (typeof window.logoutUser === 'function' && window.logoutUser !== logoutUser) {
+                window.logoutUser();
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

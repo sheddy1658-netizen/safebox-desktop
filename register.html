@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeBox - Create Account</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .bg-particles .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.08);
+            animation: floatParticle 25s infinite ease-in-out;
+        }
+        
+        .bg-particles .particle:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            top: -150px;
+            right: -150px;
+            animation-delay: 0s;
+        }
+        
+        .bg-particles .particle:nth-child(2) {
+            width: 250px;
+            height: 250px;
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -8s;
+            background: rgba(118, 75, 162, 0.12);
+        }
+        
+        .bg-particles .particle:nth-child(3) {
+            width: 180px;
+            height: 180px;
+            top: 40%;
+            left: 10%;
+            animation-delay: -15s;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .bg-particles .particle:nth-child(4) {
+            width: 120px;
+            height: 120px;
+            bottom: 20%;
+            right: 15%;
+            animation-delay: -5s;
+            background: rgba(236, 72, 153, 0.08);
+        }
+        
+        @keyframes floatParticle {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(40px, -60px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(50px, 15px) scale(1.05); }
+        }
+        
+        .register-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 440px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px 34px 34px;
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .register-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .register-header .logo {
+            font-size: 52px;
+            display: block;
+            margin-bottom: 6px;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.05) rotate(-2deg); }
+        }
+        
+        .register-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+        
+        .register-header .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+        
+        .register-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        .form-group .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.25);
+            pointer-events: none;
+            transition: color 0.3s;
+            z-index: 2;
+        }
+        
+        .form-group .input-icon.password-toggle {
+            right: 14px;
+            left: auto;
+            cursor: pointer;
+            pointer-events: auto;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.25);
+            transition: color 0.3s;
+        }
+        
+        .form-group .input-icon.password-toggle:hover {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .register-form input,
+        .register-form select {
+            width: 100%;
+            padding: 15px 16px 15px 46px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            font-family: inherit;
+        }
+        
+        .register-form select {
+            padding: 15px 16px 15px 46px;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+        
+        .register-form select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+        
+        .register-form input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .register-form input:focus,
+        .register-form select:focus {
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+        }
+        
+        .register-form input:focus ~ .input-icon,
+        .register-form select:focus ~ .input-icon {
+            color: #667eea;
+        }
+        
+        .register-form input.error {
+            border-color: #ef4444;
+        }
+        
+        .register-form input.error ~ .input-icon {
+            color: #ef4444;
+        }
+        
+        .register-form input.success {
+            border-color: #10b981;
+        }
+        
+        .register-form input.success ~ .input-icon {
+            color: #10b981;
+        }
+        
+        .password-strength {
+            font-size: 12px;
+            padding: 0 4px;
+            margin-top: -10px;
+            margin-bottom: 2px;
+            color: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .password-strength .strength-bar {
+            display: flex;
+            gap: 3px;
+            flex: 1;
+            max-width: 120px;
+        }
+        
+        .password-strength .strength-bar span {
+            flex: 1;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        .password-strength .strength-bar span.active {
+            background: currentColor;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 4px 0;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            accent-color: #667eea;
+            cursor: pointer;
+            margin-top: 1px;
+            padding: 0;
+        }
+        
+        .checkbox-group label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            cursor: pointer;
+            line-height: 1.5;
+        }
+        
+        .checkbox-group label a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .checkbox-group label a:hover {
+            color: #8b9cf7;
+            text-decoration: underline;
+        }
+        
+        .btn-register {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+            font-family: inherit;
+        }
+        
+        .btn-register::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+        
+        .btn-register:hover::before { left: 100%; }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.35);
+        }
+        
+        .btn-register:active { transform: translateY(0) scale(0.98); }
+        
+        .btn-register:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .btn-register .btn-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-register .spinner {
+            display: none;
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .btn-register.loading .spinner { display: block; }
+        .btn-register.loading .btn-text { display: none; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+        
+        .success-message .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .success-message h3 {
+            color: #10b981;
+            font-size: 20px;
+            margin: 0 0 8px 0;
+        }
+        
+        .success-message p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin: 0 0 16px 0;
+        }
+        
+        .success-message .btn-login {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .success-message .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.35);
+        }
+        
+        .register-footer {
+            text-align: center;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        .register-footer p {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .register-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .register-footer a:hover {
+            color: #8b9cf7;
+            text-decoration: underline;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 420px;
+            width: 90%;
+            pointer-events: none;
+        }
+        
+        .toast-container .toast {
+            pointer-events: auto;
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .toast-container .toast.success {
+            background: rgba(16, 185, 129, 0.9);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .toast-container .toast.error {
+            background: rgba(239, 68, 68, 0.9);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .toast-container .toast.info {
+            background: rgba(102, 126, 234, 0.9);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .toast-container .toast .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .toast-container .toast .toast-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 4px;
+            transition: color 0.3s;
+        }
+        
+        .toast-container .toast .toast-close:hover {
+            color: white;
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(80px) scale(0.9); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 28px 20px 24px;
+                border-radius: 16px;
+                max-width: 100%;
+            }
+            .register-header h2 { font-size: 24px; }
+            .register-header .logo { font-size: 40px; }
+            .register-form input,
+            .register-form select {
+                padding: 13px 14px 13px 40px;
+                font-size: 14px;
+            }
+            .register-form .form-group .input-icon {
+                font-size: 14px;
+                left: 12px;
+            }
+            .btn-register {
+                padding: 14px 20px;
+                font-size: 15px;
+            }
+            .toast-container {
+                top: 16px;
+                right: 16px;
+                max-width: calc(100% - 32px);
+            }
+            .toast-container .toast {
+                padding: 12px 16px;
+                font-size: 13px;
+            }
+            .success-message .icon { font-size: 36px; }
+            .success-message h3 { font-size: 18px; }
+        }
+        
+        @media (max-width: 360px) {
+            .register-container {
+                padding: 20px 14px 18px;
+                border-radius: 12px;
+            }
+            .register-header h2 { font-size: 20px; }
+            .register-header .logo { font-size: 32px; }
+            .register-form input,
+            .register-form select {
+                padding: 11px 12px 11px 36px;
+                font-size: 13px;
+            }
+            .register-form .form-group .input-icon {
+                font-size: 13px;
+                left: 10px;
+            }
+            .checkbox-group label { font-size: 13px; }
+            .btn-register {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="register-container">
+        <div class="register-header">
+            <span class="logo">🔐</span>
+            <h2>Create SafeBox Account</h2>
+            <p class="subtitle">Secure your files with military-grade encryption</p>
+        </div>
+
+        <form class="register-form" id="registerForm" autocomplete="off" novalidate>
+            <div class="form-group">
+                <input 
+                    type="text" 
+                    id="username" 
+                    placeholder="Username (min 3 chars)" 
+                    required 
+                    minlength="3"
+                    autocomplete="username"
+                >
+                <span class="input-icon">👤</span>
+            </div>
+
+            <div class="form-group">
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Password (min 6 chars with letters & numbers)" 
+                    required 
+                    minlength="6"
+                    autocomplete="new-password"
+                >
+                <span class="input-icon">🔑</span>
+                <span class="input-icon password-toggle" id="togglePassword" title="Toggle password visibility">👁️</span>
+            </div>
+
+            <div class="password-strength" id="passwordStrength">
+                <span id="strengthText">🔒 Strength: </span>
+                <span class="strength-bar" id="strengthBar">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </div>
+
+            <div class="form-group">
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    placeholder="Confirm Password" 
+                    required
+                    autocomplete="new-password"
+                >
+                <span class="input-icon">✓</span>
+            </div>
+
+            <div class="form-group">
+                <select id="securityQuestion" required>
+                    <option value="">Select Security Question</option>
+                    <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                    <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                    <option value="What is your favorite book?">What is your favorite book?</option>
+                    <option value="What city were you born in?">What city were you born in?</option>
+                    <option value="What is your favorite color?">What is your favorite color?</option>
+                    <option value="What was your first school?">What was your first school?</option>
+                    <option value="What is your favorite movie?">What is your favorite movie?</option>
+                </select>
+                <span class="input-icon">❓</span>
+            </div>
+
+            <div class="form-group">
+                <input 
+                    type="text" 
+                    id="securityAnswer" 
+                    placeholder="Security Answer" 
+                    required
+                    autocomplete="off"
+                >
+                <span class="input-icon">✏️</span>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="termsCheckbox" required>
+                <label for="termsCheckbox">
+                    I agree to the <a href="#" onclick="event.preventDefault(); showToast('📜 Terms of Service\n\nBy using SafeBox, you agree to our terms and privacy policy.', 'info');">Terms of Service</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-register" id="registerBtn">
+                <span class="btn-content">
+                    <span class="spinner"></span>
+                    <span class="btn-text">🚀 Create Account</span>
+                </span>
+            </button>
+        </form>
+
+        <div class="success-message" id="successMessage">
+            <span class="icon">✅</span>
+            <h3>Account Created Successfully!</h3>
+            <p>Your account has been created. Please login to continue.</p>
+            <a href="login.html" class="btn-login">🔑 Go to Login</a>
+        </div>
+
+        <div class="register-footer">
+            <p>
+                Already have an account? <a href="login.html">Login</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message, type = 'info') {
+            if (typeof window.toast === 'function') {
+                window.toast(message, type);
+                return;
+            }
+
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            const displayMessage = String(message).split('\n').join('<br>');
+
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <span style="flex:1;">${displayMessage}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(80px) scale(0.9)';
+                    toast.style.transition = 'all 0.4s ease';
+                    setTimeout(() => toast.parentNode && toast.remove(), 400);
+                }
+            }, 5000);
+        }
+
+        window.showToast = showToast;
+
+        // ============================================
+        // CHECK EXISTING SESSION
+        // ============================================
+        (function checkSession() {
+            const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            if (user) {
+                console.log('🔄 Already logged in, redirecting to dashboard');
+                window.location.href = 'dashboard.html';
+            }
+        })();
+
+        // ============================================
+        // DOM READY
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('registerForm');
+            const btn = document.getElementById('registerBtn');
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const confirmInput = document.getElementById('confirmPassword');
+            const usernameInput = document.getElementById('username');
+            const strengthText = document.getElementById('strengthText');
+            const strengthBar = document.getElementById('strengthBar');
+            const bars = strengthBar ? strengthBar.querySelectorAll('span') : [];
+            const successMessage = document.getElementById('successMessage');
+
+            // ============================================
+            // TOGGLE PASSWORD
+            // ============================================
+            if (togglePassword && passwordInput) {
+                togglePassword.addEventListener('click', function () {
+                    const isPwd = passwordInput.type === 'password';
+                    passwordInput.type = isPwd ? 'text' : 'password';
+                    this.textContent = isPwd ? '🙈' : '👁️';
+                });
+            }
+
+            // ============================================
+            // PASSWORD STRENGTH
+            // ============================================
+            const strengthMessages = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+            const strengthColors = ['#ef4444', '#ef4444', '#f59e0b', '#f59e0b', '#10b981', '#10b981'];
+            const strengthEmojis = ['🔴', '🟠', '🟡', '🟢', '🟣', '💪'];
+
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function () {
+                    const val = this.value;
+                    let score = 0;
+                    if (val.length >= 6) score++;
+                    if (val.length >= 10) score++;
+                    if (/[a-z]/.test(val) && /[A-Z]/.test(val)) score++;
+                    if (/[0-9]/.test(val)) score++;
+                    if (/[^a-zA-Z0-9]/.test(val)) score++;
+
+                    const index = Math.min(score, 5);
+                    if (strengthText) {
+                        strengthText.textContent = `${strengthEmojis[index]} Strength: ${strengthMessages[index]}`;
+                        strengthText.style.color = strengthColors[index];
+                    }
+
+                    bars.forEach((bar, i) => {
+                        bar.classList.toggle('active', i < index + 1);
+                        bar.style.background = i < index + 1 ? strengthColors[index] : 'rgba(255,255,255,0.1)';
+                    });
+                });
+            }
+
+            // ============================================
+            // REAL-TIME VALIDATION
+            // ============================================
+            if (usernameInput) {
+                usernameInput.addEventListener('input', function () {
+                    const val = this.value.trim();
+                    if (val.length >= 3) {
+                        this.classList.remove('error'); 
+                        this.classList.add('success');
+                    } else if (val.length > 0) {
+                        this.classList.add('error'); 
+                        this.classList.remove('success');
+                    } else {
+                        this.classList.remove('error', 'success');
+                    }
+                });
+            }
+
+            if (confirmInput && passwordInput) {
+                confirmInput.addEventListener('input', function () {
+                    const pass = passwordInput.value;
+                    const confirm = this.value;
+                    if (confirm.length > 0 && confirm === pass) {
+                        this.classList.remove('error'); 
+                        this.classList.add('success');
+                    } else if (confirm.length > 0) {
+                        this.classList.add('error'); 
+                        this.classList.remove('success');
+                    } else {
+                        this.classList.remove('error', 'success');
+                    }
+                });
+            }
+
+            // ============================================
+            // CHECK DATABASE
+            // ============================================
+            if (typeof registerUser !== 'function') {
+                showToast('❌ System error: Database not loaded. Please refresh.', 'error');
+                console.error('❌ registerUser function not defined!');
+                return;
+            }
+
+            // ============================================
+            // FORM SUBMIT
+            // ============================================
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const question = document.getElementById('securityQuestion').value;
+                const answer = document.getElementById('securityAnswer').value.trim();
+                const termsChecked = document.getElementById('termsCheckbox').checked;
+
+                // Validation
+                if (!username || username.length < 3) {
+                    showToast('❌ Username must be at least 3 characters', 'error');
+                    document.getElementById('username').focus();
+                    document.getElementById('username').classList.add('error');
+                    return;
+                }
+                if (!password || password.length < 6) {
+                    showToast('❌ Password must be at least 6 characters', 'error');
+                    document.getElementById('password').focus();
+                    return;
+                }
+                if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+                    showToast('❌ Password needs at least 1 letter and 1 number', 'error');
+                    document.getElementById('password').focus();
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    showToast('❌ Passwords do not match', 'error');
+                    document.getElementById('confirmPassword').focus();
+                    return;
+                }
+                if (!question) {
+                    showToast('❌ Please select a security question', 'error');
+                    document.getElementById('securityQuestion').focus();
+                    return;
+                }
+                if (!answer || answer.length < 2) {
+                    showToast('❌ Please provide a valid security answer', 'error');
+                    document.getElementById('securityAnswer').focus();
+                    return;
+                }
+                if (!termsChecked) {
+                    showToast('❌ Please agree to the Terms of Service', 'error');
+                    return;
+                }
+
+                btn.classList.add('loading');
+                btn.disabled = true;
+
+                try {
+                    const result = await registerUser(username, password, question, answer);
+
+                    if (result.success) {
+                        showToast('✅ ' + result.message, 'success');
+
+                        // Auto-login → start sync engine and redirect
+                        if (result.autoLoggedIn) {
+                            console.log('✅ Auto-logged in, starting sync engine');
+                            if (typeof initializeSync === 'function') {
+                                initializeSync().catch(err => {
+                                    console.warn('initializeSync error (non-fatal):', err);
+                                });
+                            }
+                            setTimeout(() => {
+                                window.location.href = 'dashboard.html';
+                            }, 1200);
+                        } else {
+                            form.style.display = 'none';
+                            if (successMessage) successMessage.style.display = 'block';
+                        }
+
+                    } else {
+                        showToast('❌ ' + result.message, 'error');
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    showToast('❌ Registration failed: ' + error.message, 'error');
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }
+            });
+
+            console.log('📝 Register page ready');
+        });
+    </script>
+</body>
+</html>

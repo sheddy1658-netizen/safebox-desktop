@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Share - SafeBox</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .share-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .share-card h3 {
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 6px;
+            font-size: 16px;
+        }
+        .share-card .sub-text {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .validation-status {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .validation-status.show { display: flex; }
+        .validation-status.validating {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+        }
+        .validation-status.offline {
+            border-left-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.08);
+            color: #93c5fd;
+        }
+        .validation-status.sent {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.08);
+            color: #34d399;
+        }
+        .validation-status.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+        }
+        .validation-status .spinner-mini {
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .file-picker {
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .file-picker::-webkit-scrollbar { width: 6px; }
+        .file-picker::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        .file-picker .picker-empty {
+            padding: 14px;
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .file-picker .picker-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .file-picker .picker-toolbar button {
+            background: transparent;
+            border: none;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .file-picker .picker-toolbar button:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .file-pick-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.15s;
+        }
+        .file-pick-item:last-child { border-bottom: none; }
+        .file-pick-item:hover { background: rgba(255, 255, 255, 0.03); }
+        .file-pick-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin: 0;
+        }
+        .file-pick-item .pick-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            width: 22px;
+            text-align: center;
+        }
+        .file-pick-item .pick-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-pick-item .pick-name {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+        .file-pick-item .pick-meta {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 2px;
+            display: block;
+        }
+        .file-pick-item.selected {
+            background: rgba(102, 126, 234, 0.08);
+            border-left: 3px solid #667eea;
+        }
+
+        .send-queue {
+            margin-top: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        .send-queue.show { display: block; }
+        .send-queue .queue-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 12px;
+            gap: 8px;
+        }
+        .send-queue .queue-item:last-child { border-bottom: none; }
+        .send-queue .queue-item .q-name {
+            flex: 1;
+            min-width: 0;
+            color: rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .send-queue .queue-item .q-status {
+            flex-shrink: 0;
+            font-weight: 600;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .send-queue .queue-item .q-status.waiting { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.5); }
+        .send-queue .queue-item .q-status.sending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .send-queue .queue-item .q-status.sent { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .send-queue .queue-item .q-status.pending { background: rgba(165, 180, 252, 0.15); color: #a5b4fc; }
+        .send-queue .queue-item .q-status.offline { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+        .send-queue .queue-item .q-status.error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .send-queue .queue-item .q-status.cancelled { background: rgba(107, 114, 128, 0.15); color: #9ca3af; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { opacity: 0.85; }
+        .btn-cancel { background: #ef4444; color: white; }
+        .btn-cancel:hover { background: #dc2626; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        .send-status {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+        }
+        .send-status.show { display: flex; }
+        .send-status.validating {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+        }
+        .send-status.pending {
+            border-left-color: #a5b4fc;
+            background: rgba(165, 180, 252, 0.08);
+            color: #a5b4fc;
+        }
+        .send-status.sent {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.08);
+            color: #34d399;
+        }
+        .send-status.offline {
+            border-left-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.08);
+            color: #93c5fd;
+        }
+        .send-status.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+        }
+
+        .receiver-progress {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(102, 126, 234, 0.12));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+        .receiver-progress.show { display: block; }
+        .receiver-progress .rp-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .receiver-progress .rp-item {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 12.5px;
+        }
+        .receiver-progress .rp-item:last-child { margin-bottom: 0; }
+        .receiver-progress .rp-name {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .receiver-progress .rp-name .pct {
+            font-weight: 700;
+            color: #34d399;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .receiver-progress .rp-bar {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .receiver-progress .rp-bar div {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #667eea);
+            transition: width 0.4s ease;
+        }
+
+        .pending-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 12px; background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px; margin-bottom: 6px;
+            flex-wrap: wrap; gap: 8px;
+        }
+        .pending-item.waiting { border-left: 3px solid #f59e0b; }
+        .pending-item.delivered { border-left: 3px solid #10b981; opacity: 0.85; }
+        .pending-item.link { border-left: 3px solid #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.06), rgba(118, 75, 162, 0.06)); }
+        .pending-item .info { flex: 1; min-width: 120px; }
+        .pending-item .info .name {
+            font-weight: 500; color: rgba(255, 255, 255, 0.85); font-size: 14px;
+        }
+        .pending-item .info .meta {
+            font-size: 12px; color: rgba(255, 255, 255, 0.35); margin-top: 2px;
+        }
+        .pending-item .info .link-url {
+            font-size: 11px;
+            color: #a5b4fc;
+            margin-top: 4px;
+            word-break: break-all;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        .pending-item .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+
+        .status-badge {
+            display: inline-block; font-size: 10px; padding: 2px 10px;
+            border-radius: 12px; font-weight: 600;
+        }
+        .status-badge.pending { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .status-badge.validating { background: rgba(102, 126, 234, 0.15); color: #a5b4fc; }
+        .status-badge.delivered { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .status-badge.link { background: rgba(102, 126, 234, 0.15); color: #a5b4fc; }
+
+        .empty-state {
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 13px;
+            padding: 12px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .pending-item { flex-direction: column; align-items: stretch; }
+            .pending-item .actions { justify-content: flex-end; }
+        }
+
+        .app-container header { padding-left: 70px !important; padding-right: 14px !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>📦 SafeBox</h1>
+        </header>
+        <main>
+            <h2>📤 Share Files</h2>
+            <p style="color:rgba(255,255,255,0.4);margin-bottom:16px;font-size:14px;">
+                Share one or more files with another SafeBox user.
+            </p>
+
+            <div class="share-card">
+                <h3>📤 Send Files</h3>
+                <p class="sub-text">Select one or more files and enter the recipient's username</p>
+
+                <div class="file-picker" id="filePicker">
+                    <div class="picker-toolbar">
+                        <span id="pickerCount">0 selected</span>
+                        <button type="button" id="pickerSelectAll">Select all</button>
+                    </div>
+                    <div id="filePickerList">
+                        <div class="picker-empty">Loading files…</div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:10px;">
+                    <input type="text" id="recipientUsername" placeholder="Enter recipient's username..." autocomplete="off">
+                    <button id="sendShareBtn" class="btn btn-primary">📤 Send</button>
+                </div>
+
+                <div style="margin-top:8px;">
+                    <input type="text" id="shareMessage" placeholder="Optional message...">
+                </div>
+
+                <div id="validationStatus" class="validation-status">
+                    <span class="spinner-mini" id="validationSpinner"></span>
+                    <span id="validationIcon" style="display:none;"></span>
+                    <span id="validationText">Validating recipient…</span>
+                </div>
+
+                <div class="send-queue" id="sendQueue"></div>
+
+                <div id="sendStatus" class="send-status">
+                    <span id="sendStatusIcon">⏳</span>
+                    <span id="sendStatusText">Validating recipient…</span>
+                </div>
+
+                <div id="receiverProgress" class="receiver-progress">
+                    <div class="rp-header">
+                        <span>🚀 Receiver is downloading as you upload</span>
+                    </div>
+                    <div id="rpList"></div>
+                </div>
+            </div>
+
+            <div class="share-card">
+                <h3>📨 Sent Shares <span id="sentCount" style="font-size:12px;color:rgba(255,255,255,0.4);font-weight:400;"></span></h3>
+                <div id="pendingSentShares">
+                    <div class="empty-state">No sent shares</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/dialogs.js"></script>
+    <script>
+    (function() {
+        'use strict';
+
+        let isSending = false;
+        let cancelRequested = false;
+        let selectedFileIds = new Set();
+        let availableFiles = [];
+        let serverIsOnline = false;
+
+        const LARGE_FILE_THRESHOLD =
+            (typeof window !== 'undefined' && window.LARGE_FILE_THRESHOLD) ||
+            100 * 1024 * 1024;
+
+        // ============================================
+        // ✅ SENDER-SIDE — receiver progress tracking
+        // ============================================
+
+        const _receiverProgress = new Map(); // uploadId → { name, received, total }
+        const _myActiveUploads = new Map();  // original_name → uploadId
+
+        function renderReceiverProgress() {
+            const box = document.getElementById('receiverProgress');
+            const list = document.getElementById('rpList');
+            if (!box || !list) return;
+
+            if (_receiverProgress.size === 0) {
+                box.classList.remove('show');
+                list.innerHTML = '';
+                return;
+            }
+
+            box.classList.add('show');
+
+            list.innerHTML = [..._receiverProgress.values()].map(p => {
+                const pct = p.total > 0 ? Math.round((p.received / p.total) * 100) : 0;
+                return `
+                    <div class="rp-item">
+                        <div class="rp-name">
+                            <span>${escapeHtml(p.name)}</span>
+                            <span class="pct">${pct}%</span>
+                        </div>
+                        <div class="rp-bar"><div style="width:${pct}%"></div></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function pollMyUploadsProgress() {
+            if (_myActiveUploads.size === 0) return;
+
+            const user = getCurrentUser();
+            if (!user) return;
+
+            for (const [fileName, uploadId] of _myActiveUploads.entries()) {
+                try {
+                    const res = await apiFetch(
+                        `upload_progress&upload_id=${encodeURIComponent(uploadId)}&user_id=${user.id}`
+                    );
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (!data.success) continue;
+
+                    _receiverProgress.set(uploadId, {
+                        name: data.original_name || fileName,
+                        received: data.received || 0,
+                        total: data.total_chunks || 0
+                    });
+                    renderReceiverProgress();
+
+                    if (data.completed) {
+                        setTimeout(() => {
+                            _receiverProgress.delete(uploadId);
+                            renderReceiverProgress();
+                            _myActiveUploads.delete(fileName);
+                        }, 4000);
+                    }
+                } catch (e) { /* silent */ }
+            }
+        }
+
+        let _progressPollTimer = null;
+        function startProgressPolling() {
+            if (_progressPollTimer) return;
+            _progressPollTimer = setInterval(() => {
+                if (_myActiveUploads.size === 0) {
+                    clearInterval(_progressPollTimer);
+                    _progressPollTimer = null;
+                    return;
+                }
+                pollMyUploadsProgress();
+            }, 2000);
+        }
+
+        window.addEventListener('uploadStarted', (e) => {
+            const d = e.detail;
+            console.log('⬆️ [UI] uploadStarted:', d);
+            _myActiveUploads.set(d.original_name, d.upload_id);
+            _receiverProgress.set(d.upload_id, {
+                name: d.original_name,
+                received: 0,
+                total: d.total_chunks || 0
+            });
+            renderReceiverProgress();
+            startProgressPolling();
+        });
+
+        // ============================================
+        // ✅ LINK SHARE — open / copy helpers
+        // ============================================
+
+        function openLinkShare(url) {
+            if (!url) { showToast('❌ No link', 'error'); return; }
+            try {
+                if (window.AndroidBridge && typeof window.AndroidBridge.downloadApk === 'function') {
+                    window.AndroidBridge.downloadApk(url);
+                } else {
+                    window.open(url, '_blank');
+                }
+            } catch (e) {
+                console.error('openLinkShare error:', e);
+                showToast('❌ Could not open link', 'error');
+            }
+        }
+
+        function copyLinkShare(url) {
+            if (!url) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url)
+                    .then(() => showToast('📋 Link copied', 'success'))
+                    .catch(() => fallbackCopyLink(url));
+            } else {
+                fallbackCopyLink(url);
+            }
+        }
+
+        function fallbackCopyLink(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('📋 Link copied', 'success');
+            } catch (e) {
+                showToast('Long-press to copy', 'error');
+            }
+            ta.remove();
+        }
+
+        // ============================================
+        // Rest of the page
+        // ============================================
+
+        function showToast(msg, type = 'info') {
+            if (typeof toast === 'function') { toast(msg, type); return; }
+            if (window.dialog) {
+                if (type === 'success') return dialog.success(msg);
+                if (type === 'error')   return dialog.error(msg);
+                if (type === 'warning') return dialog.warning(msg);
+                return dialog.alert(msg);
+            }
+            console.log(`[${type || 'info'}] ${msg}`);
+        }
+
+        function showValidationStatus(state, text) {
+            const el = document.getElementById('validationStatus');
+            const textEl = document.getElementById('validationText');
+            const spinner = document.getElementById('validationSpinner');
+            const iconEl = document.getElementById('validationIcon');
+            if (!el) return;
+
+            el.className = 'validation-status show ' + (state || '');
+            if (textEl) textEl.textContent = text;
+
+            if (state === 'validating') {
+                if (spinner) spinner.style.display = 'inline-block';
+                if (iconEl) iconEl.style.display = 'none';
+            } else {
+                if (spinner) spinner.style.display = 'none';
+                if (iconEl) {
+                    iconEl.style.display = 'inline';
+                    const icons = { offline: '📡', sent: '✅', error: '❌', pending: '⏳' };
+                    iconEl.textContent = icons[state] || 'ℹ️';
+                }
+            }
+        }
+
+        function hideValidationStatus() {
+            const el = document.getElementById('validationStatus');
+            if (el) el.className = 'validation-status';
+        }
+
+        function showSendStatus(icon, text, className) {
+            const el = document.getElementById('sendStatus');
+            const iconEl = document.getElementById('sendStatusIcon');
+            const textEl = document.getElementById('sendStatusText');
+            if (!el) return;
+            el.className = 'send-status show ' + (className || '');
+            if (iconEl) iconEl.textContent = icon;
+            if (textEl) textEl.textContent = text;
+        }
+
+        function hideSendStatus() {
+            const el = document.getElementById('sendStatus');
+            if (el) el.className = 'send-status';
+        }
+
+        function showSendQueue(items) {
+            const queue = document.getElementById('sendQueue');
+            if (!queue) return;
+            if (!items || items.length === 0) {
+                queue.className = 'send-queue';
+                queue.innerHTML = '';
+                return;
+            }
+            queue.className = 'send-queue show';
+            queue.innerHTML = items.map((it, i) => `
+                <div class="queue-item" data-queue-index="${i}">
+                    <span class="q-name">${escapeHtml(it.name)}</span>
+                    <span class="q-status waiting" data-status="${i}">⏳ Waiting</span>
+                </div>
+            `).join('');
+        }
+
+        function updateQueueStatus(index, status, label) {
+            const el = document.querySelector(`[data-status="${index}"]`);
+            if (!el) return;
+            el.className = 'q-status ' + status;
+            el.textContent = label;
+        }
+
+        function hideSendQueue() {
+            const queue = document.getElementById('sendQueue');
+            if (queue) {
+                queue.className = 'send-queue';
+                queue.innerHTML = '';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text == null ? '' : String(text);
+            return div.innerHTML;
+        }
+
+        async function checkServer() {
+            try {
+                if (typeof isServerOnline === 'function') {
+                    serverIsOnline = await isServerOnline();
+                } else {
+                    serverIsOnline = navigator.onLine;
+                }
+            } catch (e) {
+                serverIsOnline = false;
+            }
+            return serverIsOnline;
+        }
+
+        async function loadFilesForSharing() {
+            const container = document.getElementById('filePickerList');
+            const countEl = document.getElementById('pickerCount');
+            if (!container) return;
+
+            try {
+                if (typeof getFiles !== 'function') throw new Error('getFiles not available');
+                const allFiles = await getFiles();
+
+                availableFiles = allFiles.filter(f => {
+                    const isShared = f.is_shared_with_me === true ||
+                                     f.shared_from != null ||
+                                     f.source_type === 'shared' ||
+                                     f.source_type === 'broadcast' ||
+                                     f.source_type === 'public';
+                    // Link shares are metadata-only — they cannot be re-shared
+                    if (f.is_link_share === true) return false;
+                    return !isShared;
+                });
+
+                if (!availableFiles || availableFiles.length === 0) {
+                    container.innerHTML = '<div class="picker-empty">No files available. Upload some first.</div>';
+                    if (countEl) countEl.textContent = '0 selected';
+                    return;
+                }
+
+                const existingIds = new Set(availableFiles.map(f => f.id));
+                selectedFileIds = new Set(
+                    [...selectedFileIds].filter(id => existingIds.has(id))
+                );
+
+                container.innerHTML = availableFiles.map(f => {
+                    const checked = selectedFileIds.has(f.id) ? 'checked' : '';
+                    const icon = typeof getFileIcon === 'function' ? getFileIcon(f) : '📄';
+                    const size = typeof formatSize === 'function' ? formatSize(f.size || 0) : '';
+                    return `
+                        <label class="file-pick-item ${checked ? 'selected' : ''}" data-file-id="${f.id}">
+                            <input type="checkbox" ${checked} data-checkbox-id="${f.id}">
+                            <span class="pick-icon">${icon}</span>
+                            <span class="pick-info">
+                                <span class="pick-name">${escapeHtml(f.original_name || f.name || 'file')}</span>
+                                <span class="pick-meta">${size}</span>
+                            </span>
+                        </label>
+                    `;
+                }).join('');
+
+                container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const id = parseInt(this.dataset.checkboxId);
+                        const label = this.closest('.file-pick-item');
+                        if (this.checked) {
+                            selectedFileIds.add(id);
+                            if (label) label.classList.add('selected');
+                        } else {
+                            selectedFileIds.delete(id);
+                            if (label) label.classList.remove('selected');
+                        }
+                        updatePickerCount();
+                    });
+                });
+
+                updatePickerCount();
+
+            } catch (error) {
+                console.error('Load files error:', error);
+                container.innerHTML = '<div class="picker-empty">Error loading files</div>';
+            }
+        }
+
+        function updatePickerCount() {
+            const countEl = document.getElementById('pickerCount');
+            const n = selectedFileIds.size;
+            if (countEl) countEl.textContent = `${n} selected`;
+        }
+
+        function selectAllVisible() {
+            const container = document.getElementById('filePickerList');
+            if (!container) return;
+            container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (!cb.checked) {
+                    cb.checked = true;
+                    const id = parseInt(cb.dataset.checkboxId);
+                    selectedFileIds.add(id);
+                    const label = cb.closest('.file-pick-item');
+                    if (label) label.classList.add('selected');
+                }
+            });
+            updatePickerCount();
+        }
+
+        async function markSharesAsSent(recipientUsername) {
+            try {
+                const db = await openDB();
+                const user = getCurrentUser();
+                if (!user) return;
+
+                await new Promise((resolve) => {
+                    const tx = db.transaction([STORES.SHARED_FILES], 'readwrite');
+                    const store = tx.objectStore(STORES.SHARED_FILES);
+                    const idx = store.index('sender_id');
+                    const req = idx.getAll(user.id);
+
+                    req.onsuccess = () => {
+                        const shares = req.result || [];
+                        let updated = 0;
+
+                        shares.forEach(s => {
+                            const matchesRecipient =
+                                s.recipient_username &&
+                                s.recipient_username.toLowerCase() === recipientUsername.toLowerCase();
+
+                            const wasPending =
+                                s.status === 'pending' || s.status === 'pending_validation';
+
+                            if (matchesRecipient && wasPending) {
+                                s.status = 'delivered';
+                                s.delivered = true;
+                                s.delivered_at = new Date().toISOString();
+                                store.put(s);
+                                updated++;
+                            }
+                        });
+
+                        console.log(`✅ Marked ${updated} share(s) as delivered for ${recipientUsername}`);
+                        resolve();
+                    };
+
+                    req.onerror = () => resolve();
+                });
+            } catch (e) {
+                console.warn('markSharesAsSent failed:', e);
+            }
+        }
+
+        async function sendShare() {
+            if (isSending) return;
+
+            const recipient = document.getElementById('recipientUsername').value.trim();
+            const message = document.getElementById('shareMessage').value.trim();
+
+            hideSendStatus();
+            hideValidationStatus();
+
+            if (selectedFileIds.size === 0) {
+                showToast('Please select at least one file', 'error');
+                return;
+            }
+            if (!recipient) {
+                showToast('Please enter a recipient username', 'error');
+                document.getElementById('recipientUsername').focus();
+                return;
+            }
+            const user = getCurrentUser();
+            if (!user) { showToast('Please login first', 'error'); return; }
+            if (recipient.toLowerCase() === user.username.toLowerCase()) {
+                showToast('Cannot share with yourself', 'error');
+                return;
+            }
+            if (typeof shareFile !== 'function') {
+                showToast('❌ Share function not available', 'error');
+                return;
+            }
+
+            const filesToSend = availableFiles
+                .filter(f => selectedFileIds.has(f.id))
+                .map(f => ({ id: f.id, name: f.original_name || f.name || 'file' }));
+
+            if (filesToSend.length === 0) {
+                showToast('No valid files to send', 'error');
+                return;
+            }
+
+            isSending = true;
+            cancelRequested = false;
+            setSendButton('sending');
+
+            _myActiveUploads.clear();
+            _receiverProgress.clear();
+            renderReceiverProgress();
+            startProgressPolling();
+
+            showValidationStatus('validating', 'Validating recipient…');
+
+            const online = await checkServer();
+
+            if (cancelRequested) {
+                showValidationStatus('error', 'Cancelled');
+                isSending = false;
+                cancelRequested = false;
+                setSendButton('idle');
+                return;
+            }
+
+            showSendQueue(filesToSend);
+
+            if (!online) {
+                showValidationStatus(
+                    'offline',
+                    `📡 Server offline — saving ${filesToSend.length} file(s) locally`
+                );
+                showSendStatus('📡', 'Server offline — will send when reconnected', 'offline');
+
+                filesToSend.forEach((file, i) => {
+                    updateQueueStatus(i, 'offline', '📡 Local');
+                });
+
+                for (let i = 0; i < filesToSend.length; i++) {
+                    if (cancelRequested) {
+                        updateQueueStatus(i, 'cancelled', '⏹ Cancelled');
+                        continue;
+                    }
+                    try {
+                        await shareFile(filesToSend[i].id, recipient, message);
+                    } catch (e) {
+                        console.warn('Queue share offline error:', e);
+                    }
+                }
+
+                showSendStatus(
+                    '📡',
+                    `Saved ${filesToSend.length} file(s) locally — will send when online`,
+                    'offline'
+                );
+
+                if (filesToSend.length > 0) {
+                    document.getElementById('recipientUsername').value = '';
+                    document.getElementById('shareMessage').value = '';
+                    selectedFileIds.clear();
+                    document.querySelectorAll('#filePickerList input[type="checkbox"]').forEach(cb => {
+                        cb.checked = false;
+                        const label = cb.closest('.file-pick-item');
+                        if (label) label.classList.remove('selected');
+                    });
+                    updatePickerCount();
+                }
+
+                isSending = false;
+                cancelRequested = false;
+                setSendButton('idle');
+                await refreshAllLists();
+
+                setTimeout(() => {
+                    hideSendQueue();
+                    hideSendStatus();
+                    hideValidationStatus();
+                }, 6000);
+                return;
+            }
+
+            showValidationStatus('validating', `Sending ${filesToSend.length} file(s) to ${recipient}…`);
+
+            let sentCount = 0;
+            let pendingCount = 0;
+            let offlineCount = 0;
+            let errorCount = 0;
+            let cancelledCount = 0;
+
+            for (let i = 0; i < filesToSend.length; i++) {
+                const file = filesToSend[i];
+
+                if (cancelRequested) {
+                    updateQueueStatus(i, 'cancelled', '⏹ Cancelled');
+                    cancelledCount++;
+                    continue;
+                }
+
+                updateQueueStatus(i, 'sending', '⬆️ Sending…');
+
+                try {
+                    const result = await shareFile(file.id, recipient, message);
+
+                    if (cancelRequested) {
+                        updateQueueStatus(i, 'cancelled', '⏹ Cancelled');
+                        cancelledCount++;
+                        continue;
+                    }
+
+                    if (result.success) {
+                        if (result.pending_validation) {
+                            updateQueueStatus(i, 'pending', '⏳ Waiting');
+                            pendingCount++;
+                        } else {
+                            updateQueueStatus(i, 'sent', '✅ Sent');
+                            sentCount++;
+                        }
+                    } else {
+                        const msg = (result.message || '').toLowerCase();
+                        const looksOffline = msg.includes('offline') ||
+                                             msg.includes('server') ||
+                                             navigator.onLine === false;
+                        if (looksOffline) {
+                            updateQueueStatus(i, 'offline', '📡 Local');
+                            offlineCount++;
+                        } else {
+                            updateQueueStatus(i, 'error', '❌ Failed');
+                            errorCount++;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Share error for', file.name, error);
+                    if (cancelRequested) {
+                        updateQueueStatus(i, 'cancelled', '⏹ Cancelled');
+                        cancelledCount++;
+                    } else {
+                        updateQueueStatus(i, 'error', '❌ Failed');
+                        errorCount++;
+                    }
+                }
+            }
+
+            const total = filesToSend.length;
+            const successTotal = sentCount + pendingCount + offlineCount;
+
+            if (cancelRequested) {
+                showValidationStatus('error', `Cancelled — ${sentCount} sent, ${cancelledCount} cancelled`);
+                showSendStatus('⏹', `Cancelled — ${sentCount} sent, ${cancelledCount} cancelled`, 'error');
+            } else if (sentCount === total) {
+                showValidationStatus('sent', `✅ Sent ${sentCount} file(s) to ${recipient}`);
+                showSendStatus('✅', `Sent ${sentCount} file(s) successfully`, 'sent');
+            } else if (sentCount + pendingCount === total) {
+                showValidationStatus('pending', `⏳ Sent ${sentCount}, waiting on ${pendingCount}`);
+                showSendStatus('⏳', `Sent ${sentCount}, waiting on ${pendingCount}`, 'pending');
+            } else if (offlineCount > 0 && errorCount === 0 && sentCount === 0) {
+                showValidationStatus('offline', `📡 Saved ${offlineCount} file(s) locally`);
+                showSendStatus('📡', `Saved ${offlineCount} file(s) locally — will send when online`, 'offline');
+            } else if (errorCount > 0 && successTotal === 0) {
+                showValidationStatus('error', `❌ Failed to send ${errorCount} file(s)`);
+                showSendStatus('❌', `Failed to send ${errorCount} file(s)`, 'error');
+            } else {
+                showValidationStatus('pending', `Sent ${sentCount}, pending ${pendingCount}, offline ${offlineCount}, failed ${errorCount}`);
+                showSendStatus('⚠️', `Sent ${sentCount}, pending ${pendingCount}, offline ${offlineCount}, failed ${errorCount}`, 'pending');
+            }
+
+            if (sentCount + pendingCount > 0) {
+                document.getElementById('recipientUsername').value = '';
+                document.getElementById('shareMessage').value = '';
+                selectedFileIds.clear();
+                document.querySelectorAll('#filePickerList input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                    const label = cb.closest('.file-pick-item');
+                    if (label) label.classList.remove('selected');
+                });
+                updatePickerCount();
+            }
+
+            isSending = false;
+            cancelRequested = false;
+            setSendButton('idle');
+
+            if (sentCount > 0 || pendingCount > 0) {
+                await markSharesAsSent(recipient);
+            }
+
+            await refreshAllLists();
+
+            setTimeout(() => {
+                _myActiveUploads.clear();
+                _receiverProgress.clear();
+                renderReceiverProgress();
+            }, 15000);
+
+            setTimeout(() => {
+                hideSendQueue();
+                hideSendStatus();
+                hideValidationStatus();
+            }, 6000);
+        }
+
+        function setSendButton(state) {
+            const btn = document.getElementById('sendShareBtn');
+            if (!btn) return;
+
+            const fresh = btn.cloneNode(true);
+            btn.parentNode.replaceChild(fresh, btn);
+
+            if (state === 'sending') {
+                fresh.className = 'btn btn-cancel';
+                fresh.textContent = '⏹ Cancel';
+                fresh.disabled = false;
+                fresh.addEventListener('click', onCancelClick);
+            } else {
+                fresh.className = 'btn btn-primary';
+                fresh.textContent = '📤 Send';
+                fresh.disabled = false;
+                fresh.addEventListener('click', sendShare);
+            }
+        }
+
+        function onCancelClick() {
+            if (!isSending) return;
+            cancelRequested = true;
+            showValidationStatus('error', 'Cancelling…');
+            showSendStatus('⏹', 'Cancelling…', 'error');
+        }
+
+        async function refreshAllLists() {
+            await loadSentShares();
+            await loadFilesForSharing();
+        }
+
+        async function loadSentShares() {
+            try {
+                if (typeof getSharedByMe !== 'function') return;
+                const shares = await getSharedByMe();
+
+                // ✅ Show pending shares AND link shares
+                const pending = shares.filter(s => {
+                    if (s.is_link_share === true) return true;
+                    if (s.status === 'pending_validation') return true;
+                    if (s.status === 'pending' && s.delivered !== true) return true;
+                    if (s.status === 'shared_link') return true;
+                    return false;
+                });
+
+                const container = document.getElementById('pendingSentShares');
+                const countEl = document.getElementById('sentCount');
+                if (countEl) countEl.textContent = pending.length > 0 ? `(${pending.length})` : '';
+
+                if (pending.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No sent shares</div>';
+                    return;
+                }
+
+                container.innerHTML = pending.map(s => {
+                    const fileName = s.original_name || s.file?.original_name || 'Unknown file';
+                    const sizeText = (s.file_size || s.file?.size) && typeof formatSize === 'function'
+                        ? formatSize(s.file_size || s.file.size) : '';
+
+                    // ✅ Link share row
+                    if (s.is_link_share === true && s.share_url) {
+                        const safeUrl = String(s.share_url).replace(/'/g, "\\'");
+                        return `
+                            <div class="pending-item link">
+                                <div class="info">
+                                    <div class="name">🔗 ${escapeHtml(fileName)}</div>
+                                    <div class="meta">
+                                        To: ${escapeHtml(s.recipient_username || 'Unknown')} •
+                                        ${new Date(s.shared_at).toLocaleDateString()}
+                                        ${sizeText ? ' • ' + sizeText : ''}
+                                    </div>
+                                    <div class="link-url">${escapeHtml(s.share_url)}</div>
+                                    <div style="margin-top:4px;">
+                                        <span class="status-badge link">🔗 Link share</span>
+                                    </div>
+                                </div>
+                                <div class="actions">
+                                    <button onclick="openLinkShare('${safeUrl}')" class="btn btn-primary btn-sm" title="Open">🌐</button>
+                                    <button onclick="copyLinkShare('${safeUrl}')" class="btn btn-sm" style="background:rgba(102,126,234,0.2);color:#a5b4fc;" title="Copy">📋</button>
+                                    <button onclick="cancelShare(${s.id})" class="btn btn-danger btn-sm" title="Remove">✕</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Normal pending share row
+                    const isWaiting = s.status === 'pending_validation';
+                    const cls = isWaiting ? 'waiting' : 'pending';
+                    const badgeCls = isWaiting ? 'validating' : 'pending';
+                    const badgeText = isWaiting ? '⏳ Waiting for recipient' : '⏳ Sending';
+
+                    return `
+                        <div class="pending-item ${cls}">
+                            <div class="info">
+                                <div class="name">📄 ${escapeHtml(fileName)}</div>
+                                <div class="meta">
+                                    To: ${escapeHtml(s.recipient_username || 'Unknown')} •
+                                    ${new Date(s.shared_at).toLocaleDateString()}
+                                    ${sizeText ? ' • ' + sizeText : ''}
+                                </div>
+                                <div style="margin-top:4px;">
+                                    <span class="status-badge ${badgeCls}">${badgeText}</span>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button onclick="cancelShare(${s.id})" class="btn btn-danger btn-sm">✕ Cancel</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Load sent shares error:', error);
+            }
+        }
+
+        async function cancelShare(shareId) {
+            const ok = await dialog.confirm('Cancel this share?', {
+                icon: '❌',
+                title: 'Cancel Share',
+                okLabel: 'Cancel Share',
+                cancelLabel: 'Keep',
+                style: 'danger'
+            });
+            if (!ok) return;
+
+            try {
+                const db = await openDB();
+                const transaction = db.transaction([STORES.SHARED_FILES], 'readwrite');
+                const store = transaction.objectStore(STORES.SHARED_FILES);
+                await new Promise((resolve, reject) => {
+                    const req = store.delete(shareId);
+                    req.onsuccess = resolve;
+                    req.onerror = () => reject(req.error);
+                });
+                showToast('✅ Share cancelled', 'success');
+                await loadSentShares();
+            } catch (error) {
+                showToast('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            if (typeof window.logoutUser === 'function') { window.logoutUser(); return; }
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('username');
+            localStorage.removeItem('user_session');
+            sessionStorage.removeItem('user_session');
+            window.location.href = 'login.html';
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            loadFilesForSharing();
+            refreshAllLists();
+            renderReceiverProgress();
+
+            window.addEventListener('filesSynced', () => {
+                console.log('🔔 filesSynced → refreshing share page');
+                loadFilesForSharing();
+                loadSentShares();
+            });
+
+            window.addEventListener('sharesValidated', () => {
+                loadSentShares();
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) refreshAllLists();
+            });
+
+            window.onAppResume = (function(prev) {
+                return function() {
+                    if (prev) prev.apply(this, arguments);
+                    refreshAllLists();
+                };
+            })(window.onAppResume);
+
+            const selectAll = document.getElementById('pickerSelectAll');
+            if (selectAll) {
+                selectAll.addEventListener('click', selectAllVisible);
+            }
+
+            setSendButton('idle');
+
+            checkServer().then(online => {
+                if (!online) {
+                    showValidationStatus('offline', '📡 Server offline — files will be queued locally');
+                }
+            });
+
+            console.log('📤 Share page loaded');
+        });
+
+        window.sendShare = sendShare;
+        window.cancelShare = cancelShare;
+        window.handleLogout = handleLogout;
+        window.refreshAllLists = refreshAllLists;
+        window.loadPendingSentShares = loadSentShares;
+        window.markSharesAsSent = markSharesAsSent;
+        window.openLinkShare = openLinkShare;
+        window.copyLinkShare = copyLinkShare;
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dashboard - SafeBox</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .welcome-section { margin-bottom: 16px; }
+        .welcome-section h2 { color: white; font-size: 24px; }
+        .welcome-section h2 span {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .welcome-section p { color: rgba(255, 255, 255, 0.4); margin-top: 2px; }
+
+        .storage-widget {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        .storage-widget .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; flex-wrap: wrap; gap: 8px;
+        }
+        .storage-widget .header .title { font-weight: 600; color: rgba(255, 255, 255, 0.9); }
+        .storage-widget .header .plan { font-size: 12px; color: rgba(255, 255, 255, 0.4); margin-left: 8px; }
+        .storage-widget .header .used { font-weight: 600; color: rgba(255, 255, 255, 0.9); font-size: 14px; }
+        .storage-widget .progress-track {
+            width: 100%; height: 8px; background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px; overflow: hidden; margin: 6px 0;
+        }
+        .storage-widget .progress-track .bar {
+            height: 100%; border-radius: 4px; transition: width 0.6s ease;
+            width: 0%; background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        .storage-widget .footer {
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: rgba(255, 255, 255, 0.4); margin-top: 4px;
+        }
+        .storage-widget .refresh-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px; padding: 2px 12px; font-size: 11px;
+            color: rgba(255, 255, 255, 0.6); cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .storage-widget .refresh-btn:hover {
+            background: #667eea; color: white; border-color: #667eea;
+        }
+        .upgrade-link {
+            display: block; text-align: center; margin-top: 12px; padding: 8px;
+            background: rgba(102, 126, 234, 0.08); border-radius: 8px;
+            color: #667eea; text-decoration: none; font-weight: 600;
+            font-size: 13px; transition: all 0.2s;
+        }
+        .upgrade-link:hover { background: rgba(102, 126, 234, 0.15); }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px; padding: 14px 16px; text-align: center;
+        }
+        .stat-card .number {
+            font-size: 24px; font-weight: 700; color: white; display: block;
+        }
+        .stat-card .label { font-size: 12px; color: rgba(255, 255, 255, 0.4); }
+
+        .quick-actions {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px; margin-top: 16px;
+        }
+        .quick-actions .btn {
+            padding: 12px; border: none; border-radius: 12px; cursor: pointer;
+            font-weight: 600; font-size: 13px; transition: all 0.2s;
+            text-align: center; font-family: inherit; touch-action: manipulation;
+        }
+        .quick-actions .btn:active { transform: scale(0.95); }
+        .quick-actions .btn:hover { transform: translateY(-2px); }
+        .quick-actions .btn-upload { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .quick-actions .btn-share { background: #3b82f6; color: white; }
+        .quick-actions .btn-pdf { background: #f59e0b; color: #000; }
+        .quick-actions .btn-files { background: #10b981; color: white; }
+
+        .banner {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;
+            color: white; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 8px;
+        }
+        .banner .text { font-size: 13px; opacity: 0.9; }
+        .banner .badge {
+            font-size: 11px; opacity: 0.8; background: rgba(255, 255, 255, 0.15);
+            padding: 2px 12px; border-radius: 50px;
+        }
+
+        .quick-info {
+            margin-top: 16px; padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.4);
+        }
+        .quick-info-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 8px;
+        }
+        .quick-info-grid .item { display: flex; align-items: center; gap: 4px; }
+
+        .dashboard-footer {
+            text-align: center; font-size: 11px; color: rgba(255, 255, 255, 0.2);
+            margin-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding-top: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .quick-actions { grid-template-columns: 1fr 1fr; }
+            .banner .text { font-size: 12px; }
+            .stat-card .number { font-size: 20px; }
+        }
+
+        .app-container header { padding-left: 70px !important; padding-right: 14px !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>📦 SafeBox</h1>
+        </header>
+
+        <main>
+            <div class="welcome-section">
+                <h2>👋 Welcome, <span id="userName"></span>!</h2>
+                <p>Your secure offline file manager</p>
+            </div>
+
+            <div class="banner">
+                <div class="text">
+                    <span>📤 Upload &amp; Share Files</span>
+                    <span style="margin:0 8px;">•</span>
+                    <span>📄 Read PDFs</span>
+                    <span style="margin:0 8px;">•</span>
+                    <span>🔒 All data stored inside app</span>
+                </div>
+                <span class="badge" id="storagePlanBadge">💾 Free Plan</span>
+            </div>
+
+            <div class="storage-widget" id="storageWidget">
+                <div class="header">
+                    <div>
+                        <span class="title">💾 Storage</span>
+                        <span class="plan" id="storagePlanName">Free Plan</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="used" id="storageUsedText">0 GB / 10 GB</span>
+                        <button class="refresh-btn" onclick="handleRefreshStorage()">🔄</button>
+                    </div>
+                </div>
+                <div class="progress-track">
+                    <div class="bar" id="storageBar"></div>
+                </div>
+                <div class="footer">
+                    <span id="storagePercent">0%</span>
+                    <span id="storageRemaining">10 GB remaining</span>
+                </div>
+                <a href="#" class="upgrade-link" onclick="showUpgradeInfo(); return false;">⬆️ Upgrade Storage</a>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin:12px 0;">
+                <div class="stat-card">
+                    <span class="number" id="fileCount">0</span>
+                    <span class="label">📁 Files</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number" id="imageCount">0</span>
+                    <span class="label">🖼️ Images</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number" id="videoCount">0</span>
+                    <span class="label">🎬 Videos</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number" id="docCount">0</span>
+                    <span class="label">📄 Documents</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number" id="sharedCount">0</span>
+                    <span class="label">📤 Shared</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number" id="receivedCount">0</span>
+                    <span class="label">📥 Received</span>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button onclick="location.href='backup.html'" class="btn btn-upload">📤 Upload Files</button>
+                <button onclick="location.href='share.html'" class="btn btn-share">📤 Share Files</button>
+                <button onclick="location.href='pdf.html'" class="btn btn-pdf">📄 Read PDF</button>
+                <button onclick="location.href='files.html'" class="btn btn-files">📁 My Files</button>
+            </div>
+
+            <div class="quick-info">
+                <div class="quick-info-grid">
+                    <div class="item">✅ <strong>Upload:</strong> Files stored in IndexedDB</div>
+                    <div class="item">✅ <strong>Share:</strong> Send files to other users</div>
+                    <div class="item">✅ <strong>PDF:</strong> Read documents instantly</div>
+                    <div class="item">✅ <strong>Offline:</strong> Works without internet</div>
+                </div>
+            </div>
+
+            <div class="dashboard-footer">
+                <span>🔒 All data stored locally in IndexedDB | </span>
+                <span>📱 v<span id="footerVersion">1.0.0</span></span>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/updater.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+        function showToast(msg, type) {
+            if (typeof toast === 'function') { toast(msg, type); return; }
+            alert(msg);
+        }
+
+        function showUpgradeInfo() {
+            showToast('💾 Storage upgrade coming soon!\nCurrent: 10GB Free Plan', 'info');
+        }
+
+        function handleLogout() {
+            if (typeof window.logoutUser === 'function') { window.logoutUser(); return; }
+            try {
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                localStorage.removeItem('user_session');
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'login.html';
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        function handleCheckUpdates() { /* disabled */ }
+
+        function handleRefreshStorage() {
+            if (typeof refreshStorageUI === 'function') {
+                refreshStorageUI();
+            } else {
+                loadDashboard();
+                showToast('🔄 Storage refreshed', 'info');
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                const user = getCurrentUser();
+                if (!user) { window.location.href = 'login.html'; return; }
+
+                const userNameEl = document.getElementById('userName');
+                if (userNameEl) userNameEl.textContent = user.username;
+
+                await updateDashboardCounts();
+
+                try {
+                    if (typeof getSharedByMe === 'function') {
+                        const sharedByMe = await getSharedByMe();
+                        const sharedWithMe = await getSharedFiles();
+                        const sharedCountEl = document.getElementById('sharedCount');
+                        const receivedCountEl = document.getElementById('receivedCount');
+                        if (sharedCountEl) sharedCountEl.textContent = sharedByMe?.length || 0;
+                        if (receivedCountEl) receivedCountEl.textContent = sharedWithMe?.length || 0;
+                    }
+                } catch (e) { console.log('Share stats not available:', e); }
+
+                const version = localStorage.getItem('app_version') || '1.0.0';
+                const footerVersion = document.getElementById('footerVersion');
+                if (footerVersion) footerVersion.textContent = version;
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                showToast('❌ Error loading dashboard: ' + error.message, 'error');
+            }
+        }
+
+        // ============================================
+        // PAGE INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadDashboard, 200);
+        });
+
+        // ============================================
+        // LIVE UPDATES — re-render on sync
+        // ============================================
+        window.addEventListener('filesSynced', () => {
+            console.log('🔔 filesSynced → refreshing dashboard');
+            loadDashboard();
+        });
+
+        window.addEventListener('sharesValidated', () => {
+            loadDashboard();
+        });
+
+        // Foreground resume
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) loadDashboard();
+        });
+
+        // Native bridge safety net
+        window.onAppResume = (function(prev) {
+            return function() {
+                if (prev) prev.apply(this, arguments);
+                loadDashboard();
+            };
+        })(window.onAppResume);
+
+        console.log('📦 SafeBox Dashboard loaded');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Chat - SafeBox</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ---------- page shell ---------- */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .app-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container header {
+            flex-shrink: 0;
+            padding: 12px 16px 12px 70px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .app-container header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        main {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        .chat-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 12px;
+            width: 100%;
+            min-height: 0;
+        }
+
+        @media (max-width: 780px) {
+            .chat-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(120px, 30vh) 1fr;
+            }
+        }
+
+        .chat-list {
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .chat-list .empty {
+            padding: 16px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .new-chat-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 9px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .new-chat-btn:hover {
+            background: rgba(102, 126, 234, 0.28);
+            color: #fff;
+        }
+
+        .thread-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            position: relative;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .thread-item:hover { background: rgba(255, 255, 255, 0.05); }
+        .thread-item.active { background: rgba(59, 130, 246, 0.2); }
+        .thread-item .peer {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        .thread-item .preview {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 30px;
+        }
+        .thread-item .unread {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .chat-thread {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ---------- thread header with action buttons ---------- */
+        .thread-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .thread-header .peer-label {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .thread-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .thread-actions button {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+            padding: 0;
+        }
+        .thread-actions button:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+        .thread-actions button.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        .thread-actions button[disabled] {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .thread-actions button[disabled]:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .thread-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        .thread-input {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .thread-input input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.9);
+            outline: none;
+            transition: border-color 0.2s;
+            margin: 0;
+            min-width: 0;
+        }
+        .thread-input input:focus { border-color: #667eea; }
+        .thread-input input::placeholder { color: rgba(255, 255, 255, 0.2); }
+        .thread-input button { flex-shrink: 0; }
+
+        .msg {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            flex-shrink: 0;
+        }
+        .msg.me {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .msg.them {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        .msg .time {
+            font-size: 10px;
+            opacity: 0.65;
+            display: block;
+            margin-top: 4px;
+        }
+        .msg.pending { opacity: 0.55; }
+        .msg.failed {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        /* ✅ Tick indicators */
+        .tick {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 11px;
+            line-height: 1;
+            vertical-align: middle;
+            letter-spacing: -2px;
+        }
+        .tick-pending { opacity: 0.7; letter-spacing: 0; }
+        .tick-sent    { color: rgba(255, 255, 255, 0.8); }
+        .tick-read    { color: #60a5fa; font-weight: 700; }
+        .tick-failed  { color: #fca5a5; letter-spacing: 0; }
+
+        .thread-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .thread-empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+        /* ---------- modal ---------- */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        .modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal {
+            background: #14142a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 20px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+        .modal-backdrop.active .modal { transform: scale(1); }
+        .modal h3 {
+            margin: 0 0 6px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .modal p {
+            margin: 0 0 14px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .modal input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.9);
+            outline: none;
+            margin-bottom: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .modal input:focus { border-color: #667eea; }
+        .modal input::placeholder { color: rgba(255, 255, 255, 0.2); }
+        .modal .error {
+            color: #ef4444;
+            font-size: 12px;
+            min-height: 16px;
+            margin-bottom: 10px;
+        }
+        .modal .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .modal .actions button {
+            padding: 9px 16px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s;
+        }
+        .modal .btn-cancel {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .modal .btn-cancel:hover { background: rgba(255, 255, 255, 0.1); }
+        .modal .btn-ok {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+        }
+        .modal .btn-ok:hover { filter: brightness(1.1); }
+        .modal .btn-ok:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .modal .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #fff;
+        }
+        .modal .btn-danger:hover { filter: brightness(1.1); }
+        .modal .btn-danger:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 480px) {
+            main { padding: 8px; }
+            .chat-layout {
+                gap: 8px;
+                grid-template-rows: minmax(100px, 26vh) 1fr;
+            }
+            .app-container header { padding: 10px 12px 10px 64px; }
+            .app-container header h1 { font-size: 16px; }
+            .thread-body { padding: 12px; }
+            .msg { max-width: 85%; font-size: 13.5px; }
+            .thread-input { padding: 8px; gap: 6px; }
+            .thread-input input {
+                padding: 9px 12px;
+                font-size: 15px;
+            }
+            .thread-input button {
+                padding: 9px 14px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>💬 SafeBox Chat</h1>
+        </header>
+
+        <main>
+            <div class="chat-layout">
+                <div class="chat-list" id="chatList">
+                    <button class="new-chat-btn" onclick="startNewChat()">
+                        <span>＋</span>
+                        <span>New Chat</span>
+                    </button>
+                    <div class="empty">Loading conversations…</div>
+                </div>
+
+                <div class="chat-thread">
+                    <div class="thread-header">
+                        <div class="peer-label" id="threadHeader">Select a conversation</div>
+                        <div class="thread-actions" id="threadActions" style="display:none;">
+                            <button id="clearChatBtn"
+                                    title="Clear messages"
+                                    onclick="clearCurrentChat()">🧹</button>
+                            <button id="deleteChatBtn"
+                                    class="danger"
+                                    title="Delete conversation"
+                                    onclick="deleteCurrentChat()">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="thread-body" id="threadBody">
+                        <div class="thread-empty">
+                            <div class="icon">💬</div>
+                            <div>Pick a conversation on the left</div>
+                            <div style="font-size:12px;margin-top:6px;opacity:0.6;">
+                                or tap <strong>＋ New Chat</strong> to start one
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="thread-input" id="threadInput" style="display:none;">
+                        <input type="text" id="msgInput" placeholder="Type a message…" maxlength="4000" autocomplete="off">
+                        <button class="btn btn-primary" onclick="onSend()" id="sendBtn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Chat modal -->
+    <div class="modal-backdrop" id="newChatModal">
+        <div class="modal">
+            <h3>Start a new chat</h3>
+            <p>Enter the username of the person you want to message.</p>
+            <input type="text" id="newChatInput" placeholder="username" autocomplete="off" maxlength="64" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <div class="error" id="newChatError"></div>
+            <div class="actions">
+                <button class="btn-cancel" onclick="closeNewChatModal()">Cancel</button>
+                <button class="btn-ok" id="newChatOk" onclick="confirmNewChat()">Start Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Clear modal -->
+    <div class="modal-backdrop" id="clearChatModal">
+        <div class="modal">
+            <h3>Clear all messages?</h3>
+            <p id="clearChatText">This will remove every message in this conversation for both you and the other person. The conversation will stay in your list.</p>
+            <div class="actions">
+                <button class="btn-cancel" onclick="closeClearChatModal()">Cancel</button>
+                <button class="btn-danger" id="clearChatOk" onclick="confirmClearChat()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete modal -->
+    <div class="modal-backdrop" id="deleteChatModal">
+        <div class="modal">
+            <h3>Delete this conversation?</h3>
+            <p id="deleteChatText">This will remove the conversation and all its messages for both you and the other person. This cannot be undone.</p>
+            <div class="actions">
+                <button class="btn-cancel" onclick="closeDeleteChatModal()">Cancel</button>
+                <button class="btn-danger" id="deleteChatOk" onclick="confirmDeleteChat()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ Added ?v=3 to force browser to load the new offline logic -->
+    <script src="js/indexeddb.js?v=3"></script>
+    <script src="js/dialogs.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        let openPeer = null;
+        let refreshTimer = null;
+
+        let _renderScheduled = false;
+        let _renderRunning = false;
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[c]));
+        }
+
+        function handleLogout() {
+            if (typeof window.logoutUser === 'function') window.logoutUser();
+            else {
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'login.html';
+            }
+        }
+
+        function toast(msg, type) {
+            if (typeof window.toast === 'function') return window.toast(msg, type);
+            if (typeof window.showToast === 'function') return window.showToast(msg, type);
+            console.log(`[${type || 'info'}] ${msg}`);
+        }
+
+        // ========================================
+        // COALESCED RENDER
+        // ========================================
+        function scheduleRender() {
+            if (_renderRunning) {
+                _renderScheduled = true;
+                return;
+            }
+            _renderRunning = true;
+            (async () => {
+                try {
+                    await renderChatList();
+                    if (openPeer) await renderThread();
+                } catch (e) {
+                    console.warn('render error:', e);
+                } finally {
+                    _renderRunning = false;
+                    if (_renderScheduled) {
+                        _renderScheduled = false;
+                        scheduleRender();
+                    }
+                }
+            })();
+        }
+
+        // ========================================
+        // NEW CHAT MODAL
+        // ========================================
+
+        window.startNewChat = function () {
+            const modal = document.getElementById('newChatModal');
+            const input = document.getElementById('newChatInput');
+            const err = document.getElementById('newChatError');
+            if (!modal || !input) return;
+
+            input.value = '';
+            err.textContent = '';
+            modal.classList.add('active');
+            setTimeout(() => input.focus(), 50);
+        };
+
+        window.closeNewChatModal = function () {
+            const modal = document.getElementById('newChatModal');
+            if (modal) modal.classList.remove('active');
+        };
+
+        window.confirmNewChat = async function () {
+            const input = document.getElementById('newChatInput');
+            const err = document.getElementById('newChatError');
+            const okBtn = document.getElementById('newChatOk');
+            if (!input || !err || !okBtn) return;
+
+            const username = (input.value || '').trim();
+            err.textContent = '';
+
+            if (!username) {
+                err.textContent = 'Please enter a username';
+                return;
+            }
+            if (username.length < 3) {
+                err.textContent = 'Username too short';
+                return;
+            }
+
+            const me = getCurrentUser();
+            if (!me) {
+                err.textContent = 'You are not logged in';
+                return;
+            }
+            if (username.toLowerCase() === me.username.toLowerCase()) {
+                err.textContent = "You can't chat with yourself";
+                return;
+            }
+
+            okBtn.disabled = true;
+            okBtn.textContent = 'Checking…';
+
+            let exists = false;
+            let isOffline = false;
+
+            try {
+                if (typeof checkUserOnServer === 'function') {
+                    const result = await checkUserOnServer(username);
+                    exists = !!(result && result.exists);
+                    isOffline = !!(result && result.isOffline);
+                }
+            } catch (e) {
+                console.warn('checkUserOnServer failed:', e);
+                isOffline = true;
+            }
+
+            okBtn.disabled = false;
+            okBtn.textContent = 'Start Chat';
+
+            // ✅ Offline logic: bypass check and open chat
+            if (isOffline) {
+                window.closeNewChatModal();
+                await window.openChat(username);
+                return;
+            }
+
+            // Online logic: block if user doesn't exist
+            if (!exists) {
+                err.textContent = `User "${username}" not found`;
+                return;
+            }
+
+            window.closeNewChatModal();
+            await window.openChat(username);
+        };
+
+        // ========================================
+        // CLEAR CHAT MODAL
+        // ========================================
+
+        window.clearCurrentChat = function () {
+            if (!openPeer) return;
+            const modal = document.getElementById('clearChatModal');
+            const txt = document.getElementById('clearChatText');
+            if (!modal || !txt) return;
+
+            txt.textContent =
+                `Remove every message between you and "${openPeer}"? ` +
+                `This affects both of you and cannot be undone. The conversation stays in your list.`;
+            modal.classList.add('active');
+        };
+
+        window.closeClearChatModal = function () {
+            const modal = document.getElementById('clearChatModal');
+            if (modal) modal.classList.remove('active');
+        };
+
+        window.confirmClearChat = async function () {
+            const okBtn = document.getElementById('clearChatOk');
+            if (!openPeer || !okBtn) return;
+
+            okBtn.disabled = true;
+            okBtn.textContent = 'Clearing…';
+
+            try {
+                const result = await clearChatThread(openPeer);
+                if (result && result.success) {
+                    toast('🧹 Messages cleared', 'success');
+                } else if (result && result.localOnly) {
+                    toast('🧹 Cleared locally — server unreachable', 'warning');
+                } else {
+                    toast('❌ ' + ((result && result.message) || 'Failed to clear'), 'error');
+                }
+            } catch (e) {
+                console.warn('clearChatThread error:', e);
+                toast('❌ Failed to clear', 'error');
+            }
+
+            okBtn.disabled = false;
+            okBtn.textContent = 'Clear';
+            window.closeClearChatModal();
+            scheduleRender();
+        };
+
+        // ========================================
+        // DELETE CHAT MODAL
+        // ========================================
+
+        window.deleteCurrentChat = function () {
+            if (!openPeer) return;
+            const modal = document.getElementById('deleteChatModal');
+            const txt = document.getElementById('deleteChatText');
+            if (!modal || !txt) return;
+
+            txt.textContent =
+                `Delete the conversation with "${openPeer}" and all its messages? ` +
+                `This affects both of you and cannot be undone.`;
+            modal.classList.add('active');
+        };
+
+        window.closeDeleteChatModal = function () {
+            const modal = document.getElementById('deleteChatModal');
+            if (modal) modal.classList.remove('active');
+        };
+
+        window.confirmDeleteChat = async function () {
+            const okBtn = document.getElementById('deleteChatOk');
+            if (!openPeer || !okBtn) return;
+
+            const peer = openPeer;
+
+            okBtn.disabled = true;
+            okBtn.textContent = 'Deleting…';
+
+            try {
+                const result = await deleteChatConversation(peer);
+                if (result && result.success) {
+                    toast('🗑️ Conversation deleted', 'success');
+                } else if (result && result.localOnly) {
+                    toast('🗑️ Deleted locally — server unreachable', 'warning');
+                } else {
+                    toast('❌ ' + ((result && result.message) || 'Failed to delete'), 'error');
+                }
+            } catch (e) {
+                console.warn('deleteChatConversation error:', e);
+                toast('❌ Failed to delete', 'error');
+            }
+
+            okBtn.disabled = false;
+            okBtn.textContent = 'Delete';
+
+            window.closeDeleteChatModal();
+            openPeer = null;
+            window.__openChatPeer = null;
+            document.getElementById('threadHeader').textContent = 'Select a conversation';
+            document.getElementById('threadInput').style.display = 'none';
+            document.getElementById('threadActions').style.display = 'none';
+            document.getElementById('threadBody').innerHTML = `
+                <div class="thread-empty">
+                    <div class="icon">💬</div>
+                    <div>Pick a conversation on the left</div>
+                    <div style="font-size:12px;margin-top:6px;opacity:0.6;">
+                        or tap <strong>＋ New Chat</strong> to start one
+                    </div>
+                </div>
+            `;
+
+            scheduleRender();
+        };
+
+        // ========================================
+        // RENDER CHAT LIST
+        // ========================================
+
+        async function renderChatList() {
+            const el = document.getElementById('chatList');
+            if (!el) return;
+
+            let threads = [];
+            try {
+                threads = await getChatThreads();
+            } catch (e) {
+                console.warn('getChatThreads error:', e);
+            }
+
+            const newChatBtnHtml = `
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <span>＋</span>
+                    <span>New Chat</span>
+                </button>
+            `;
+
+            const peerSet = new Set((threads || []).map(t => t.peer));
+            if (openPeer && !peerSet.has(openPeer)) {
+                threads = [{
+                    peer: openPeer,
+                    last_body: 'No messages yet',
+                    last_sent: new Date().toISOString(),
+                    unread_count: 0,
+                    _placeholder: true
+                }, ...(threads || [])];
+            }
+
+            if (!threads || threads.length === 0) {
+                el.innerHTML = newChatBtnHtml + '<div class="empty">No conversations yet</div>';
+                return;
+            }
+
+            el.innerHTML = newChatBtnHtml + threads.map(t => {
+                const isActive = t.peer === openPeer;
+                const preview = escapeHtml(t.last_body || '');
+                const peer = escapeHtml(t.peer || '');
+                const peerSafe = String(t.peer || '').replace(/'/g, "\\'");
+                const unread = Number(t.unread_count || 0);
+                return `
+                    <div class="thread-item ${isActive ? 'active' : ''}"
+                         onclick="openChat('${peerSafe}')">
+                        <div class="peer">${peer}</div>
+                        <div class="preview">${preview}</div>
+                        ${unread > 0 ? `<span class="unread">${unread}</span>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========================================
+        // RENDER THREAD (with tick indicators)
+        // ========================================
+
+        async function renderThread() {
+            const body = document.getElementById('threadBody');
+            if (!body || !openPeer) return;
+
+            const me = getCurrentUser();
+            if (!me) return;
+
+            const wasAtBottom =
+                body.scrollTop + body.clientHeight >= body.scrollHeight - 40;
+
+            let msgs = [];
+            try {
+                msgs = await getLocalChat(openPeer);
+            } catch (e) {
+                console.warn('getLocalChat error:', e);
+            }
+
+            if (!msgs || msgs.length === 0) {
+                body.innerHTML = `
+                    <div class="thread-empty">
+                        <div class="icon">✉️</div>
+                        <div>No messages yet</div>
+                        <div style="font-size:12px;margin-top:6px;opacity:0.6;">
+                            Say hi to ${escapeHtml(openPeer)}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            body.innerHTML = msgs.map(m => {
+                const mine = m.sender === me.username;
+                const classes = ['msg', mine ? 'me' : 'them'];
+                if (m.pending) classes.push('pending');
+                if (m.failed) classes.push('failed');
+
+                let time = '';
+                try {
+                    time = new Date(m.sent_at).toLocaleTimeString().slice(0, 5);
+                } catch (e) {
+                    time = '';
+                }
+
+                // ✅ Status indicator (only on our own messages)
+                let tick = '';
+                if (mine) {
+                    if (m.failed) {
+                        tick = `<span class="tick tick-failed">❌</span>`;
+                    } else if (m.pending) {
+                        tick = `<span class="tick tick-pending">⏳</span>`;
+                    } else if (m.read) {
+                        tick = `<span class="tick tick-read">✓✓</span>`;
+                    } else {
+                        tick = `<span class="tick tick-sent">✓</span>`;
+                    }
+                }
+
+                return `<div class="${classes.join(' ')}">${escapeHtml(m.body)}<span class="time">${time}${tick}</span></div>`;
+            }).join('');
+
+            if (wasAtBottom) {
+                body.scrollTop = body.scrollHeight;
+            }
+        }
+
+        // ========================================
+        // OPEN CHAT
+        // ========================================
+
+        window.openChat = async function (peer) {
+            if (!peer) return;
+            openPeer = peer;
+            window.__openChatPeer = peer;
+
+            document.getElementById('threadHeader').textContent = '💬 ' + peer;
+            document.getElementById('threadInput').style.display = 'flex';
+            document.getElementById('threadActions').style.display = 'flex';
+
+            const inputEl = document.getElementById('msgInput');
+            if (inputEl) {
+                inputEl.focus({ preventScroll: true });
+            }
+
+            try {
+                await loadChatThread(peer);
+            } catch (e) {
+                console.warn('loadChatThread error:', e);
+            }
+
+            try {
+                await markChatRead(peer);
+            } catch (e) {
+                console.warn('markChatRead error:', e);
+            }
+
+            scheduleRender();
+        };
+
+        // ========================================
+        // SEND
+        // ========================================
+
+        window.onSend = async function () {
+            const input = document.getElementById('msgInput');
+            if (!input || !openPeer) return;
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            input.focus({ preventScroll: true });
+
+            try {
+                const result = await sendChatMessage(openPeer, text);
+                if (!result || !result.success) {
+                    // ✅ If it queued offline, do NOT show an error toast
+                    if (result && result.queued) {
+                        toast('⏳ Saved — will send when online', 'info');
+                    } else {
+                        toast('❌ ' + ((result && result.message) || 'Send failed'), 'error');
+                    }
+                }
+            } catch (e) {
+                console.warn('sendChatMessage error:', e);
+                toast('❌ Send failed', 'error');
+            }
+
+            scheduleRender();
+        };
+
+        // ========================================
+        // EVENTS
+        // ========================================
+
+        window.addEventListener('chatUpdated', scheduleRender);
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                const peer = window.__openChatPeer;
+                if (peer && typeof loadChatThread === 'function') {
+                    loadChatThread(peer).catch(() => {});
+                }
+                scheduleRender();
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            window.__openChatPeer = null;
+        });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const input = document.getElementById('msgInput');
+            if (input) {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        window.onSend();
+                    }
+                });
+            }
+
+            const newChatInput = document.getElementById('newChatInput');
+            if (newChatInput) {
+                newChatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        window.confirmNewChat();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    ['newChatModal', 'clearChatModal', 'deleteChatModal'].forEach(id => {
+                        const m = document.getElementById(id);
+                        if (m && m.classList.contains('active')) {
+                            m.classList.remove('active');
+                        }
+                    });
+                }
+            });
+
+            ['newChatModal', 'clearChatModal', 'deleteChatModal'].forEach(id => {
+                const m = document.getElementById(id);
+                if (m) {
+                    m.addEventListener('click', (e) => {
+                        if (e.target === m) m.classList.remove('active');
+                    });
+                }
+            });
+
+            scheduleRender();
+
+            if (window.__openChatPeer) {
+                window.openChat(window.__openChatPeer);
+            }
+
+            refreshTimer = setInterval(async () => {
+                if (document.hidden) return;
+                const peer = window.__openChatPeer;
+                if (peer && typeof loadChatThread === 'function') {
+                    loadChatThread(peer).catch(() => {});
+                }
+                scheduleRender();
+            }, 10000);
+
+            console.log('💬 Chat page ready (offline queue enabled)');
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (refreshTimer) clearInterval(refreshTimer);
+        });
+    })();
+    </script>
+</body>
+</html>

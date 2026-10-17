@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>My Files - SafeBox</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .header-actions { margin-bottom: 8px; }
+        .header-actions h2 { color: white; margin: 0; }
+        .header-actions .file-count { color: rgba(255, 255, 255, 0.4); font-size: 14px; }
+
+        /* ✅ Header nav (Files / Chat / Logout) */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .app-header h1 { margin: 0; }
+        .app-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .app-nav a, .app-nav button {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.75);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            font-family: inherit;
+        }
+        .app-nav a:hover, .app-nav button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .app-nav a.active {
+            background: rgba(102, 126, 234, 0.25);
+            color: #a5b4fc;
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+
+        .file-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .file-controls input[type="text"] {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 14px;
+            border: 2px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.9);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .file-controls input[type="text"]:focus { border-color: #667eea; }
+        .file-controls input[type="text"]::placeholder { color: rgba(255, 255, 255, 0.2); }
+
+        .storage-info-bar {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .storage-info-bar .label { font-size: 13px; color: rgba(255, 255, 255, 0.4); }
+        .storage-info-bar .label strong { color: rgba(255, 255, 255, 0.8); }
+        .storage-info-bar .progress-wrap { flex: 1; min-width: 100px; max-width: 200px; }
+        .storage-info-bar .progress-wrap .bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .storage-info-bar .progress-wrap .bar div {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.5s;
+            width: 0%;
+        }
+        .storage-info-bar .percent {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .file-card .file-from {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 2px;
+        }
+
+        .file-card .file-large-hint {
+            font-size: 10px;
+            color: #a5b4fc;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .file-card.link-share-card {
+            border: 1px solid rgba(102, 126, 234, 0.35);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+        }
+        .file-card.link-share-card .file-icon {
+            font-size: 32px;
+        }
+        .file-card.link-share-card .file-large-hint {
+            color: #a5b4fc;
+        }
+
+        .file-section { margin-top: 20px; }
+        .file-section:first-of-type { margin-top: 12px; }
+
+        .file-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .file-section-header .title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .file-section-header .title .icon { font-size: 18px; }
+        .file-section-header .count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .file-section-header.received {
+            border-left: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.06);
+        }
+        .file-section-header.received .title { color: #a5b4fc; }
+        .file-section-header.received .count {
+            background: rgba(102, 126, 234, 0.15);
+            color: #a5b4fc;
+        }
+        .file-section-header.own { border-left: 3px solid #10b981; }
+        .file-section-header.own .title { color: #34d399; }
+
+        .streaming-banner {
+            display: none;
+            margin: 12px 0 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+        }
+        .streaming-banner.show { display: block; }
+        .streaming-banner .sb-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 13.5px;
+            font-weight: 600;
+        }
+        .streaming-banner .sb-header .sb-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1;
+        }
+        .streaming-banner .sb-header .sb-title .name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .streaming-banner .sb-header .sb-count {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
+            flex-shrink: 0;
+        }
+        .streaming-banner .sb-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .streaming-banner .sb-item {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12.5px;
+        }
+        .streaming-banner .sb-item .sb-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .streaming-banner .sb-item .sb-item-name {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .streaming-banner .sb-item .sb-item-pct {
+            font-weight: 700;
+            font-size: 12px;
+            color: #a5b4fc;
+            flex-shrink: 0;
+        }
+        .streaming-banner .sb-bar {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .streaming-banner .sb-bar div {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.4s ease;
+        }
+        .streaming-banner .sb-item.streaming .sb-bar div {
+            animation: streamPulse 2s ease-in-out infinite;
+        }
+        @keyframes streamPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (max-width: 480px) {
+            .storage-info-bar .progress-wrap { max-width: 100%; width: 100%; }
+            .file-controls { flex-direction: column; }
+            .file-controls input[type="text"] { width: 100%; }
+            .file-controls .filters { width: 100%; justify-content: center; }
+            .file-section-header { padding: 8px 12px; }
+            .file-section-header .title { font-size: 14px; }
+            .app-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>📦 SafeBox</h1>
+            <nav class="app-nav">
+                <a href="files.html" class="active">📁 Files</a>
+                <a href="chat.html">💬 Chat</a>
+                <button onclick="handleLogout()">Logout</button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="header-actions">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;width:100%;">
+                    <h2>📁 My Files</h2>
+                    <span class="file-count" id="fileCount">0 files</span>
+                </div>
+
+                <div id="streamingBanner" class="streaming-banner">
+                    <div class="sb-header">
+                        <div class="sb-title">
+                            <span>📥 Receiving</span>
+                            <span class="name" id="sbFileName">—</span>
+                        </div>
+                        <span class="sb-count" id="sbCount"></span>
+                    </div>
+                    <div class="sb-list" id="sbList"></div>
+                </div>
+
+                <div class="file-controls">
+                    <input type="text" id="searchInput" placeholder="🔍 Search files..." inputmode="search">
+                    <div class="filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="picture">🖼️</button>
+                        <button class="filter-btn" data-filter="video">🎬</button>
+                        <button class="filter-btn" data-filter="document">📄</button>
+                        <button class="filter-btn" data-filter="backup">💾 Backups</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="storage-info-bar" id="storageInfoBar">
+                <div class="label">
+                    💾 Storage: <strong id="storageUsedText">0 MB</strong> / <strong id="storageLimitText">10 GB</strong>
+                </div>
+                <div class="progress-wrap">
+                    <div class="bar">
+                        <div id="storageBar"></div>
+                    </div>
+                </div>
+                <span class="percent" id="storagePercent">0%</span>
+            </div>
+
+            <section class="file-section" id="ownSection">
+                <div class="file-section-header own">
+                    <div class="title">
+                        <span class="icon">📁</span>
+                        <span>My Files</span>
+                    </div>
+                    <span class="count" id="ownCount">0</span>
+                </div>
+                <div id="ownGrid" class="file-grid">
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <span class="icon">📭</span>
+                        <h3>No files yet</h3>
+                        <p style="color:rgba(255,255,255,0.4);margin-bottom:12px;">
+                            Upload your first file from the Backup page!
+                        </p>
+                        <a href="backup.html" class="btn btn-primary" style="margin-top:8px;">
+                            📤 Upload Files
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="file-section" id="receivedSection">
+                <div class="file-section-header received">
+                    <div class="title">
+                        <span class="icon">📥</span>
+                        <span>Received Files</span>
+                    </div>
+                    <span class="count" id="receivedCount">0</span>
+                </div>
+                <div id="receivedGrid" class="file-grid">
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <span class="icon">📭</span>
+                        <h3>No received files</h3>
+                        <p style="color:rgba(255,255,255,0.4);">
+                            Files shared with you will appear here.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/updater.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/dialogs.js"></script>
+    <script>
+    (function() {
+        'use strict';
+
+        let currentFiles = [];
+        let currentOwn = [];
+        let currentReceived = [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        const _streams = new Map();
+
+        function renderStreamingBanner() {
+            const banner = document.getElementById('streamingBanner');
+            const list = document.getElementById('sbList');
+            const fileCountEl = document.getElementById('sbCount');
+            if (!banner || !list) return;
+
+            if (_streams.size === 0) {
+                banner.classList.remove('show');
+                list.innerHTML = '';
+                if (fileCountEl) fileCountEl.textContent = '';
+                return;
+            }
+
+            banner.classList.add('show');
+
+            const items = [..._streams.values()];
+            const totalFiles = items.length;
+
+            if (fileCountEl) {
+                fileCountEl.textContent = totalFiles === 1
+                    ? '1 file in progress'
+                    : `${totalFiles} files in progress`;
+            }
+
+            list.innerHTML = items.map(s => {
+                const pct = s.total > 0 ? Math.round((s.received / s.total) * 100) : 0;
+                const size = s.info.total_size && typeof formatSize === 'function'
+                    ? formatSize(s.info.total_size) : '';
+                return `
+                    <div class="sb-item streaming">
+                        <div class="sb-item-header">
+                            <span class="sb-item-name">
+                                <strong>${escapeHtml(s.info.sender_username || 'sender')}</strong>
+                                → ${escapeHtml(s.info.original_name || 'file')}
+                                ${size ? `<span style="color:rgba(255,255,255,0.4)"> (${size})</span>` : ''}
+                            </span>
+                            <span class="sb-item-pct">${pct}%</span>
+                        </div>
+                        <div class="sb-bar"><div style="width:${pct}%"></div></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(t) {
+            const div = document.createElement('div');
+            div.textContent = t == null ? '' : String(t);
+            return div.innerHTML;
+        }
+
+        window.addEventListener('streamStarted', (e) => {
+            const info = e.detail;
+            console.log('📥 [UI] streamStarted:', info);
+            _streams.set(info.upload_id, {
+                info,
+                received: 0,
+                total: info.total_chunks || 0
+            });
+            renderStreamingBanner();
+        });
+
+        window.addEventListener('streamProgress', (e) => {
+            const p = e.detail;
+            const s = _streams.get(p.upload_id);
+            if (!s) return;
+            s.received = p.received || 0;
+            s.total = p.total || s.total;
+            renderStreamingBanner();
+        });
+
+        window.addEventListener('streamCompleted', (e) => {
+            const f = e.detail;
+            console.log('✅ [UI] streamCompleted:', f);
+            for (const [uid, s] of _streams.entries()) {
+                if (s.info.original_name === f.original_name) {
+                    _streams.delete(uid);
+                }
+            }
+            renderStreamingBanner();
+        });
+
+        window.addEventListener('streamFailed', (e) => {
+            const info = e.detail || {};
+            console.log('⚠️ [UI] streamFailed:', info);
+            for (const [uid, s] of _streams.entries()) {
+                if (s.info.upload_id === info.upload_id ||
+                    s.info.original_name === info.original_name) {
+                    _streams.delete(uid);
+                }
+            }
+            renderStreamingBanner();
+        });
+
+        function openLinkShare(url) {
+            if (!url) { showToast('❌ No link', 'error'); return; }
+            try {
+                if (window.Android && typeof window.Android.openUrl === 'function') {
+                    window.Android.openUrl(url);
+                } else {
+                    window.open(url, '_blank');
+                }
+            } catch (e) {
+                console.error('openLinkShare error:', e);
+                showToast('❌ Could not open link', 'error');
+            }
+        }
+
+        function copyLinkShare(url) {
+            if (!url) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url)
+                    .then(() => showToast('📋 Link copied', 'success'))
+                    .catch(() => fallbackCopyLink(url));
+            } else {
+                fallbackCopyLink(url);
+            }
+        }
+
+        function fallbackCopyLink(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('📋 Link copied', 'success');
+            } catch (e) {
+                showToast('Long-press to copy', 'error');
+            }
+            ta.remove();
+        }
+
+        function showToast(msg, type) {
+            if (typeof toast === 'function') { toast(msg, type); return; }
+            if (window.dialog) {
+                if (type === 'success') return dialog.success(msg);
+                if (type === 'error')   return dialog.error(msg);
+                if (type === 'warning') return dialog.warning(msg);
+                return dialog.alert(msg);
+            }
+            console.log(`[${type || 'info'}] ${msg}`);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        async function loadStorageInfo() {
+            const user = getCurrentUser();
+            if (!user) return;
+            try {
+                if (typeof getStorageInfo !== 'function') return;
+                const storage = await getStorageInfo(user.id);
+                if (storage) {
+                    const usedText = document.getElementById('storageUsedText');
+                    const limitText = document.getElementById('storageLimitText');
+                    const storageBar = document.getElementById('storageBar');
+                    const percentText = document.getElementById('storagePercent');
+                    if (usedText) usedText.textContent = storage.usedGB.toFixed(1) + ' GB';
+                    if (limitText) limitText.textContent = storage.limitGB.toFixed(0) + ' GB';
+                    if (storageBar) storageBar.style.width = Math.min(storage.percentage, 100) + '%';
+                    if (percentText) percentText.textContent = Math.round(storage.percentage) + '%';
+                }
+            } catch (error) {
+                console.error('Load storage error:', error);
+            }
+        }
+
+        function isSharedWithMe(file) {
+            return file.is_shared_with_me === true ||
+                   file.shared_from != null ||
+                   file.source_type === 'shared' ||
+                   file.source_type === 'broadcast' ||
+                   file.source_type === 'public' ||
+                   file.is_server_only === true;
+        }
+
+        async function getAllFiles(filter = 'all', search = '') {
+            const user = getCurrentUser();
+            if (!user) return { own: [], received: [], total: 0 };
+
+            let allFiles = [];
+            try {
+                const localFiles = await getFiles();
+                allFiles = [...localFiles];
+                console.log('📁 Files in IndexedDB:', allFiles.length);
+            } catch (e) {
+                console.warn('Local files error:', e);
+                return { own: [], received: [], total: 0 };
+            }
+
+            allFiles.sort((a, b) => {
+                const dateA = new Date(a.uploaded_at || 0);
+                const dateB = new Date(b.uploaded_at || 0);
+                return dateB - dateA;
+            });
+
+            let filtered = allFiles;
+            if (filter === 'backup') {
+                filtered = allFiles.filter(f => f.is_backup);
+            } else if (filter !== 'all') {
+                filtered = allFiles.filter(f => f.file_type === filter);
+            }
+
+            if (search) {
+                const q = search.toLowerCase();
+                filtered = filtered.filter(f =>
+                    (f.original_name || '').toLowerCase().includes(q)
+                );
+            }
+
+            const own = [];
+            const received = [];
+            for (const f of filtered) {
+                if (isSharedWithMe(f)) received.push(f);
+                else own.push(f);
+            }
+
+            return { own, received, total: filtered.length };
+        }
+
+        function renderFileCard(file) {
+            const icon = typeof getFileIcon === 'function' ? getFileIcon(file) : '📄';
+            const size = typeof formatSize === 'function' ? formatSize(file.size) : (file.size || 0) + ' B';
+            const date = file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : '';
+
+            const isShared = isSharedWithMe(file);
+            const ownerText = isShared && file.owner_username
+                ? `👤 ${file.owner_username}`
+                : '';
+
+            if (file.is_link_share === true && file.share_url) {
+                const sender = file.owner_username || 'sender';
+                const safeUrl = String(file.share_url).replace(/'/g, "\\'");
+                return `
+                    <div class="file-card link-share-card" data-id="${file.id}">
+                        <div class="file-icon">🔗</div>
+                        <div class="file-name" title="${escapeHtml(file.original_name)}">
+                            ${escapeHtml(file.original_name)}
+                        </div>
+                        <div class="file-size">${size}</div>
+                        <div class="file-date">${date}</div>
+                        <div class="file-from">From: ${escapeHtml(sender)}</div>
+                        <div class="file-large-hint">🔗 Link share — open to download</div>
+                        <div class="file-actions">
+                            <button onclick="openLinkShare('${safeUrl}')"
+                                    class="btn btn-download"
+                                    title="Open download link">🌐</button>
+                            <button onclick="copyLinkShare('${safeUrl}')"
+                                    class="btn btn-share"
+                                    title="Copy link">📋</button>
+                            <button onclick="removeSharedFile(${file.id})"
+                                    class="btn btn-delete"
+                                    title="Remove from your list">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const viewBtn     = `onclick="viewFile(${file.id})"`;
+            const downloadBtn = `onclick="downloadFileToDevice(${file.id})"`;
+            const downloadTitle = 'Download';
+            const downloadIcon = '⬇️';
+
+            const backupBtn   = `onclick="backupOffline(${file.id})"`;
+            const shareBtn    = isShared
+                ? `disabled title="Shared with you"`
+                : `onclick="shareFileUI(${file.id})"`;
+            const deleteBtn   = isShared
+                ? `onclick="removeSharedFile(${file.id})"`
+                : `onclick="deleteFileHandler(${file.id})"`;
+            const deleteTitle = isShared ? 'Remove from your list' : 'Delete';
+
+            const isLarge = (Number(file.size) || 0) > 100 * 1024 * 1024;
+            const largeHint = isLarge
+                ? `<div class="file-large-hint">📦 Large file — may take a while</div>`
+                : '';
+
+            return `
+                <div class="file-card" data-id="${file.id}">
+                    <div class="file-icon">${icon}</div>
+                    <div class="file-name" title="${escapeHtml(file.original_name)}">
+                        ${file.is_backup ? '💾 ' : ''}${escapeHtml(file.original_name)}
+                    </div>
+                    <div class="file-size">${size}</div>
+                    <div class="file-date">${date}</div>
+                    ${ownerText ? `<div class="file-from">${ownerText}</div>` : ''}
+                    ${largeHint}
+                    <div class="file-actions">
+                        <button ${viewBtn} class="btn btn-view" title="View">👁️</button>
+                        <button ${downloadBtn} class="btn btn-download" title="${downloadTitle}">${downloadIcon}</button>
+                        <button ${shareBtn} class="btn btn-share" title="Share">📤</button>
+                        <button ${backupBtn} class="btn btn-backup" title="Save">💾</button>
+                        <button ${deleteBtn} class="btn btn-delete" title="${deleteTitle}">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function ownEmptyHtml(filter, search) {
+            if (search) {
+                return `<div class="empty-state" style="grid-column:1/-1;">
+                    <span class="icon">🔍</span>
+                    <h3>No matches</h3>
+                    <p style="color:rgba(255,255,255,0.4);">Try a different search term</p>
+                </div>`;
+            }
+            if (filter !== 'all') {
+                return `<div class="empty-state" style="grid-column:1/-1;">
+                    <span class="icon">📭</span>
+                    <h3>No ${filter} files</h3>
+                    <p style="color:rgba(255,255,255,0.4);">Upload some from the Backup page</p>
+                </div>`;
+            }
+            return `<div class="empty-state" style="grid-column:1/-1;">
+                <span class="icon">📭</span>
+                <h3>No files yet</h3>
+                <p style="color:rgba(255,255,255,0.4);margin-bottom:12px;">
+                    Upload your first file from the Backup page!
+                </p>
+                <a href="backup.html" class="btn btn-primary" style="margin-top:8px;">
+                    📤 Upload Files
+                </a>
+            </div>`;
+        }
+
+        function receivedEmptyHtml(filter, search) {
+            if (search) {
+                return `<div class="empty-state" style="grid-column:1/-1;">
+                    <span class="icon">🔍</span>
+                    <h3>No matches</h3>
+                    <p style="color:rgba(255,255,255,0.4);">Try a different search term</p>
+                </div>`;
+            }
+            return `<div class="empty-state" style="grid-column:1/-1;">
+                <span class="icon">📭</span>
+                <h3>No received files</h3>
+                <p style="color:rgba(255,255,255,0.4);">
+                    Files shared with you will appear here.
+                </p>
+            </div>`;
+        }
+
+        async function loadFiles(filter = 'all', search = '') {
+            currentFilter = filter;
+            currentSearch = search;
+
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const ownGrid = document.getElementById('ownGrid');
+            const receivedGrid = document.getElementById('receivedGrid');
+            const ownCountEl = document.getElementById('ownCount');
+            const receivedCountEl = document.getElementById('receivedCount');
+            const totalCountEl = document.getElementById('fileCount');
+
+            if (!ownGrid || !receivedGrid) return;
+
+            try {
+                const { own, received, total } = await getAllFiles(filter, search);
+
+                currentOwn = own;
+                currentReceived = received;
+                currentFiles = [...own, ...received];
+
+                if (ownCountEl) ownCountEl.textContent = own.length;
+                if (receivedCountEl) receivedCountEl.textContent = received.length;
+                if (totalCountEl) totalCountEl.textContent = total + ' files';
+
+                if (own.length === 0) {
+                    ownGrid.innerHTML = ownEmptyHtml(filter, search);
+                } else {
+                    ownGrid.innerHTML = own.map(f => renderFileCard(f)).join('');
+                }
+
+                if (received.length === 0) {
+                    receivedGrid.innerHTML = receivedEmptyHtml(filter, search);
+                } else {
+                    receivedGrid.innerHTML = received.map(f => renderFileCard(f)).join('');
+                }
+
+                console.log(`✅ Rendered: ${own.length} own, ${received.length} received`);
+            } catch (error) {
+                console.error('❌ Load files error:', error);
+                ownGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+                    <span class="icon">⚠️</span>
+                    <h3>Error loading files</h3>
+                    <p style="color:#ef4444;">${error.message}</p>
+                    <button onclick="loadFiles('${filter}', '')" class="btn btn-primary" style="margin-top:8px;">
+                        🔄 Retry
+                    </button>
+                </div>`;
+                receivedGrid.innerHTML = '';
+            }
+        }
+
+        async function removeSharedFile(fileId) {
+            const ok = await dialog.confirm(
+                'This removes your access on the server too.',
+                { icon: '🗑️', title: 'Remove from your list?', okLabel: 'Remove', cancelLabel: 'Keep', style: 'danger' }
+            );
+            if (!ok) return;
+            try {
+                if (typeof deleteFile !== 'function') { showToast('❌ Delete not available', 'error'); return; }
+                const result = await deleteFile(Number(fileId));
+                showToast(result.message || '🗑️ Removed', result.success ? 'success' : 'error');
+                if (result.success) {
+                    await loadFiles(currentFilter, currentSearch);
+                    await loadStorageInfo();
+                }
+            } catch (error) {
+                console.error('Remove error:', error);
+                showToast('❌ Error removing file', 'error');
+            }
+        }
+
+        async function shareFileUI(fileId) {
+            const recipient = await dialog.prompt('Enter recipient username', '', {
+                icon: '📤', title: 'Share File', placeholder: 'username'
+            });
+            if (!recipient) return;
+            const message = await dialog.prompt('Optional message', '', {
+                icon: '📝', title: 'Add a note (optional)', placeholder: 'Say something nice...', okLabel: 'Send'
+            });
+            if (message === null) return;
+            shareFileWithUser(fileId, recipient, message || '');
+        }
+
+        async function shareFileWithUser(fileId, recipient, message) {
+            try {
+                if (typeof shareFile !== 'function') { showToast('❌ Share not available', 'error'); return; }
+                showToast('📤 Sharing...', 'info');
+                const result = await shareFile(fileId, recipient, message);
+                if (result.success) showToast('✅ ' + result.message, 'success');
+                else showToast('❌ ' + result.message, 'error');
+            } catch (error) {
+                console.error('Share error:', error);
+                showToast('❌ Share failed: ' + error.message, 'error');
+            }
+        }
+
+        function viewFile(id) {
+            if (!id) { showToast('❌ No file selected', 'error'); return; }
+            window.location.href = `view.html?id=${id}`;
+        }
+
+        async function deleteFileHandler(id) {
+            const ok = await dialog.confirm(
+                'This will remove the file permanently.\n\nIf it was uploaded by you, it will be removed from the server too.',
+                { icon: '🗑️', title: 'Delete this file?', okLabel: 'Delete', cancelLabel: 'Keep', style: 'danger' }
+            );
+            if (!ok) return;
+            try {
+                if (typeof deleteFile !== 'function') { showToast('❌ Delete not available', 'error'); return; }
+                const result = await deleteFile(id);
+                showToast(result.message || '🗑️ Deleted', result.success ? 'success' : 'error');
+                if (result.success) {
+                    await loadFiles(currentFilter || 'all', currentSearch);
+                    await loadStorageInfo();
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Error deleting file', 'error');
+            }
+        }
+
+        function handleLogout() {
+            if (typeof window.logoutUser === 'function') window.logoutUser();
+            else {
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'login.html';
+            }
+        }
+
+        function setupFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const filter = this.dataset.filter || 'all';
+                    loadFiles(filter, currentSearch);
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 Files page loaded');
+
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (typeof getFiles !== 'function') {
+                showToast('❌ Database not initialized', 'error');
+                return;
+            }
+
+            loadFiles('all', '');
+            loadStorageInfo();
+            setupFilters();
+            renderStreamingBanner();
+
+            if (typeof initializeSync === 'function') {
+                initializeSync().catch(err => {
+                    console.warn('initializeSync error (non-fatal):', err);
+                });
+            }
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(function() {
+                    const query = this.value.trim();
+                    loadFiles(currentFilter, query);
+                }, 250));
+            }
+
+            window.addEventListener('filesSynced', async () => {
+                console.log('🔔 filesSynced → refreshing files page');
+                await loadFiles(currentFilter || 'all', currentSearch);
+                await loadStorageInfo();
+            });
+
+            window.addEventListener('sharesValidated', async () => {
+                await loadFiles(currentFilter || 'all', currentSearch);
+            });
+
+            document.addEventListener('visibilitychange', async () => {
+                if (document.hidden) return;
+                await loadFiles(currentFilter || 'all', currentSearch);
+                await loadStorageInfo();
+            });
+
+            window.onAppResume = (function(prev) {
+                return function() {
+                    if (prev) prev.apply(this, arguments);
+                    loadFiles(currentFilter || 'all', currentSearch);
+                    loadStorageInfo();
+                };
+            })(window.onAppResume);
+
+            setInterval(() => {
+                loadFiles(currentFilter || 'all', currentSearch);
+            }, 30000);
+
+            console.log('✅ Files page ready (own + received columns)');
+        });
+
+        window.loadFiles = loadFiles;
+        window.viewFile = viewFile;
+        window.deleteFileHandler = deleteFileHandler;
+        window.shareFileUI = shareFileUI;
+        window.removeSharedFile = removeSharedFile;
+        window.handleLogout = handleLogout;
+        window.openLinkShare = openLinkShare;
+        window.copyLinkShare = copyLinkShare;
+    })();
+    </script>
+</body>
+</html>

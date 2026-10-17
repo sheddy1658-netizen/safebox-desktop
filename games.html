@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Games · SafeBox</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      background: #0b0b16;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 8px;
+      touch-action: manipulation;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app-container { 
+      width: 100%; 
+      max-width: 500px; 
+      margin: 0 auto; 
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 4px 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-wrap: wrap; gap: 4px; flex-shrink: 0;
+    }
+    header h1 { font-size: clamp(16px, 3vw, 20px); letter-spacing: 0.5px; background: linear-gradient(135deg, #a78bfa, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    nav { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    nav a, nav button {
+      background: rgba(255,255,255,0.04); border: none; color: rgba(255,255,255,0.6);
+      padding: 3px 7px; border-radius: 20px; font-size: clamp(11px, 1.8vw, 14px); text-decoration: none;
+      transition: 0.2s; cursor: pointer; font-family: inherit; touch-action: manipulation;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    nav a:hover, nav button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    nav a[style*="color:white"] { background: rgba(102,126,234,0.2); }
+    nav a:active, nav button:active { transform: scale(0.92); }
+
+    main { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+      padding-top: 6px;
+      min-height: 0;
+    }
+    h2 { font-size: clamp(16px, 2.8vw, 20px); font-weight: 600; margin-bottom: 0; flex-shrink: 0; }
+    .sub { color: rgba(255,255,255,0.4); font-size: clamp(11px, 1.6vw, 13px); margin-bottom: 8px; flex-shrink: 0; }
+
+    .game-grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 10px; 
+      flex-shrink: 0;
+    }
+    .game-card {
+      background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 16px; padding: 14px 8px; text-align: center; cursor: pointer;
+      transition: 0.25s; backdrop-filter: blur(4px); touch-action: manipulation;
+    }
+    .game-card:active { transform: scale(0.94); background: rgba(255,255,255,0.06); }
+    .game-card .icon { font-size: clamp(28px, 5vw, 38px); display: block; margin-bottom: 2px; }
+    .game-card h3 { font-size: clamp(13px, 2vw, 15px); margin: 2px 0; color: rgba(255,255,255,0.9); }
+    .game-card p { font-size: clamp(9px, 1.2vw, 11px); color: rgba(255,255,255,0.35); }
+    .game-card .tag {
+      display: inline-block; font-size: clamp(7px, 1vw, 9px); padding: 1px 8px; border-radius: 12px;
+      margin-top: 4px; font-weight: 600; background: rgba(102,126,234,0.15); color: #818cf8;
+    }
+    .game-card .badge {
+      display: inline-block; font-size: clamp(7px, 1vw, 8px); padding: 1px 6px; border-radius: 10px;
+      margin-top: 3px; background: rgba(16,185,129,0.15); color: #34d399;
+    }
+
+    .game-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #0b0b16; z-index: 9999; display: none; flex-direction: column;
+      overflow: hidden;
+    }
+    .game-overlay.active { display: flex; }
+    .overlay-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 10px; background: rgba(18,18,32,0.96);
+      border-bottom: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; min-height: 34px;
+    }
+    .overlay-header h2 { font-size: clamp(13px, 2vw, 15px); margin: 0; }
+    .close-btn {
+      background: rgba(255,255,255,0.06); border: none; color: #ccc;
+      padding: 3px 12px; border-radius: 30px; font-size: clamp(10px, 1.4vw, 12px); cursor: pointer;
+      transition: 0.2s; font-family: inherit; touch-action: manipulation;
+    }
+    .close-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+    .game-content { 
+      flex: 1; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 2px; 
+      overflow: hidden; 
+      min-height: 0; 
+    }
+
+    .level-selector {
+      display: flex; gap: 3px; flex-wrap: wrap; justify-content: center;
+      flex-shrink: 0; padding: 1px 0;
+    }
+    .level-btn {
+      padding: 1px 8px; border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 30px; background: transparent; color: rgba(255,255,255,0.4);
+      font-size: clamp(7px, 1.2vh, 10px); font-weight: 600; cursor: pointer;
+      transition: 0.25s; font-family: inherit; touch-action: manipulation; min-height: 20px;
+      white-space: nowrap;
+    }
+    .level-btn.active { border-color: #818cf8; background: rgba(102,126,234,0.15); color: #a5b4fc; }
+    .level-btn.timed { border-color: #fbbf24; color: #fbbf24; }
+    .level-btn.timed.active { background: rgba(234,179,8,0.2); border-color: #fbbf24; color: #fbbf24; }
+    .level-btn.completed { border-color: #10b981; color: #34d399; background: rgba(16,185,129,0.08); }
+    .level-btn.locked { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    .level-btn:active { transform: scale(0.92); }
+
+    .game-info {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+      color: rgba(255,255,255,0.5); font-size: clamp(8px, 1.2vh, 11px);
+      flex-shrink: 0; padding: 1px 0;
+    }
+    .game-info span { display: flex; align-items: center; gap: 2px; }
+    .game-info .value { color: white; font-weight: 700; }
+    .game-info .value.timed-warning { color: #fbbf24; }
+    .game-info .value.completed { color: #34d399; }
+
+    .btn {
+      padding: 3px 10px !important; border: none !important; border-radius: 30px !important;
+      font-size: clamp(8px, 1.2vh, 11px) !important; font-weight: 600 !important;
+      cursor: pointer !important; transition: 0.2s !important; touch-action: manipulation !important;
+      font-family: inherit !important; min-height: 24px !important;
+      display: inline-flex !important; align-items: center !important; gap: 3px;
+    }
+    .btn:active { transform: scale(0.94) !important; }
+    .btn-primary { background: #667eea !important; color: white !important; }
+    .btn-success { background: #10b981 !important; color: white !important; }
+    .btn-info { background: #3b82f6 !important; color: white !important; }
+    .btn-secondary { background: rgba(255,255,255,0.06) !important; color: #ddd !important; }
+    .btn-danger { background: rgba(239,68,68,0.12) !important; color: #f87171 !important; }
+    .btn-purple { background: rgba(139,92,246,0.15) !important; color: #a78bfa !important; }
+    .btn:disabled { opacity: 0.35 !important; pointer-events: none !important; }
+
+    .game-buttons { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; flex-shrink: 0; padding: 2px 0; }
+
+    /* SUDOKU */
+    .sudoku-wrapper {
+      display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%;
+      max-height: 100%; padding: 1px; gap: 2px; justify-content: center; overflow: hidden;
+    }
+    .sudoku-board {
+      display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px;
+      width: min(85vw, 65vh, 450px); aspect-ratio: 1; background: #1e293b;
+      padding: 2px; border-radius: 6px; touch-action: none; flex-shrink: 0;
+    }
+    .sudoku-board .cell {
+      aspect-ratio: 1; background: #2d3748; border: none; color: #e2e8f0;
+      text-align: center; font-size: clamp(12px, 3vh, 26px); font-weight: 700;
+      cursor: pointer; border-radius: 1px; transition: 0.1s; display: flex;
+      align-items: center; justify-content: center; touch-action: none; user-select: none;
+    }
+    .sudoku-board .cell.border-top { border-top: 2px solid #64748b !important; }
+    .sudoku-board .cell.border-left { border-left: 2px solid #64748b !important; }
+    .sudoku-board .cell.border-bottom { border-bottom: 2px solid #64748b !important; }
+    .sudoku-board .cell.border-right { border-right: 2px solid #64748b !important; }
+    .sudoku-board .cell:active { background: #4a5568 !important; transform: scale(0.92); }
+    .sudoku-board .cell.given { color: #94a3b8 !important; background: #1a202c !important; cursor: default; }
+    .sudoku-board .cell.user-input { color: #818cf8 !important; }
+    .sudoku-board .cell.error { color: #f87171 !important; background: rgba(239,68,68,0.15) !important; }
+    .sudoku-board .cell.selected { background: #4a5568 !important; box-shadow: inset 0 0 0 2px #818cf8 !important; }
+    .sudoku-numpad {
+      display: grid !important; grid-template-columns: repeat(5, 1fr) !important;
+      gap: 3px !important; width: min(75vw, 55vh, 380px) !important; flex-shrink: 0;
+    }
+    .sudoku-numpad button {
+      padding: 3px 0 !important; background: rgba(255,255,255,0.05) !important;
+      border: 1.5px solid rgba(255,255,255,0.06) !important; border-radius: 6px !important;
+      color: white !important; font-size: clamp(14px, 2.5vh, 22px) !important;
+      font-weight: 700 !important; cursor: pointer !important; transition: 0.15s !important;
+      font-family: inherit !important; min-height: 28px !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+    }
+    .sudoku-numpad button:active { background: rgba(102,126,234,0.25) !important; transform: scale(0.92); border-color: #818cf8; }
+    .sudoku-numpad button.clear-btn { background: rgba(239,68,68,0.08) !important; color: #f87171 !important; }
+
+    /* WORD SEARCH - POINTER EVENTS READY */
+    .wordsearch-wrapper {
+      display: flex; flex-direction: row; width: 100%; height: 100%; max-height: 100%;
+      padding: 2px; gap: 4px; justify-content: center; align-items: center; overflow: hidden;
+    }
+    .wordsearch-grid-container {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      flex: 1; min-width: 0; height: 100%; justify-content: center;
+    }
+    .wordsearch-grid {
+      display: grid; gap: 2px; width: min(60vw, 50vh, 400px);
+      aspect-ratio: 1; background: #1e293b; padding: 2px; border-radius: 6px;
+      touch-action: none !important;
+      flex-shrink: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .wordsearch-grid .cell {
+      aspect-ratio: 1; background: #2d3748; border: none; color: #e2e8f0;
+      text-align: center; font-size: clamp(10px, 2.4vh, 20px); font-weight: 700;
+      cursor: pointer; border-radius: 2px; transition: 0.1s; display: flex;
+      align-items: center; justify-content: center; text-transform: uppercase;
+      touch-action: none !important;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    .wordsearch-grid .cell:active { background: #4a5568 !important; transform: scale(0.92); }
+    .wordsearch-grid .cell.found { background: rgba(102,126,234,0.2) !important; color: #a5b4fc !important; }
+    .wordsearch-grid .cell.selected { background: rgba(102,126,234,0.35) !important; box-shadow: inset 0 0 0 2px #818cf8 !important; color: #fff !important; }
+    .wordsearch-grid .cell.highlight-hint { animation: pulseHint 0.7s ease 2; background: rgba(16,185,129,0.3) !important; }
+    @keyframes pulseHint { 0%,100%{ transform: scale(1); } 50%{ transform: scale(1.1); } }
+
+    .wordsearch-list {
+      display: flex; flex-direction: column; gap: 2px; padding: 4px 8px;
+      background: rgba(255,255,255,0.02); border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04); min-width: 60px; max-width: 120px;
+      height: min(60vw, 50vh, 400px); overflow-y: auto; flex-shrink: 0;
+    }
+    .wordsearch-list::-webkit-scrollbar { width: 2px; }
+    .wordsearch-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 8px; }
+    .wordsearch-list .word-item {
+      color: rgba(255,255,255,0.4); font-size: clamp(8px, 1.2vh, 11px);
+      font-weight: 600; padding: 1px 3px; border-radius: 3px;
+      border-left: 2px solid transparent; text-transform: uppercase;
+      letter-spacing: 0.3px; transition: 0.3s;
+    }
+    .wordsearch-list .word-item.found { color: #a5b4fc; border-left-color: #818cf8; background: rgba(102,126,234,0.06); text-decoration: line-through; text-decoration-color: rgba(102,126,234,0.3); }
+    .wordsearch-list .word-item.found::after { content: " ✓"; font-size: 8px; }
+    .wordsearch-list .word-item.highlight { color: #fff; border-left-color: #10b981; background: rgba(16,185,129,0.08); }
+
+    .wordsearch-hint {
+      color: rgba(255,255,255,0.4); font-size: clamp(7px, 1vh, 10px);
+      text-align: center; min-height: 14px; flex-shrink: 0;
+    }
+
+    /* MINESWEEPER */
+    .mines-wrapper {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; height: 100%; padding: 1px; gap: 3px; overflow: hidden;
+    }
+    .mines-status {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      color: rgba(255,255,255,0.6); font-size: clamp(9px, 1.3vh, 12px);
+      font-weight: 600; padding: 2px 0; flex-shrink: 0;
+    }
+    .mines-status span { display: flex; align-items: center; gap: 3px; }
+    .mines-status .value { color: white; font-weight: 700; }
+    .mines-board {
+      display: grid; gap: 1px;
+      width: min(88vw, 62vh, 420px); aspect-ratio: 1; background: #1e293b;
+      padding: 2px; border-radius: 6px;
+      touch-action: manipulation; flex-shrink: 0;
+    }
+    .mines-board .cell {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #475569, #334155);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      color: #e2e8f0;
+      font-size: clamp(10px, 2.3vh, 18px);
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+      padding: 0;
+    }
+    .mines-board .cell:active {
+      background: linear-gradient(135deg, #64748b, #475569) !important;
+      transform: scale(0.92);
+    }
+    .mines-board .cell.revealed {
+      background: #1e293b !important;
+      border-color: rgba(255,255,255,0.04);
+      cursor: default;
+    }
+    .mines-board .cell.revealed:active {
+      background: #1e293b !important;
+      transform: none;
+    }
+    .mines-board .cell.flagged {
+      background: linear-gradient(135deg, #7c2d12, #451a03) !important;
+    }
+    .mines-board .cell.mine {
+      background: #dc2626 !important;
+      color: white !important;
+    }
+    .mines-board .cell.exploded {
+      background: #b91c1c !important;
+      animation: boomShake 0.3s;
+    }
+    @keyframes boomShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+    /* Number colors — classic Minesweeper palette */
+    .mines-board .cell.n1 { color: #60a5fa; }
+    .mines-board .cell.n2 { color: #34d399; }
+    .mines-board .cell.n3 { color: #f87171; }
+    .mines-board .cell.n4 { color: #a78bfa; }
+    .mines-board .cell.n5 { color: #fbbf24; }
+    .mines-board .cell.n6 { color: #22d3ee; }
+    .mines-board .cell.n7 { color: #e879f9; }
+    .mines-board .cell.n8 { color: #cbd5e1; }
+
+    .toast {
+      position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
+      padding: 4px 14px; border-radius: 40px; color: #fff; font-size: clamp(10px, 1.4vw, 12px);
+      font-weight: 600; z-index: 99999; background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px); border-left: 3px solid #818cf8;
+      max-width: 90%; text-align: center; pointer-events: none;
+    }
+    .toast.success { border-left-color: #10b981; }
+    .toast.error { border-left-color: #f87171; }
+    .toast.warning { border-left-color: #fbbf24; }
+    .toast.gold { border-left-color: #fbbf24; background: rgba(234,179,8,0.15); }
+
+    /* RESPONSIVE */
+    @media (max-width: 500px) {
+      .game-grid { gap: 8px; }
+      .game-card { padding: 10px 6px; border-radius: 14px; }
+      .sudoku-board { width: min(88vw, 55vh, 340px); }
+      .sudoku-numpad { width: min(78vw, 50vh, 300px) !important; }
+      .sudoku-numpad button { min-height: 24px !important; font-size: 14px !important; }
+      .sudoku-board .cell { font-size: clamp(10px, 2.5vh, 18px) !important; }
+      .wordsearch-grid { width: min(82vw, 48vh, 300px); }
+      .wordsearch-grid .cell { font-size: clamp(8px, 2vh, 14px); }
+      .mines-board { width: min(90vw, 55vh, 340px); }
+    }
+
+    @media (max-width: 380px) {
+      .sudoku-board { width: min(90vw, 45vh, 260px); }
+      .sudoku-board .cell { font-size: clamp(8px, 2vh, 12px) !important; }
+      .sudoku-numpad { width: min(82vw, 42vh, 220px) !important; }
+      .sudoku-numpad button { min-height: 20px !important; font-size: 11px !important; }
+      .wordsearch-grid { width: min(88vw, 40vh, 220px); }
+      .wordsearch-grid .cell { font-size: clamp(6px, 1.6vh, 10px); }
+      .wordsearch-list { min-width: 45px; max-width: 80px; }
+      .wordsearch-list .word-item { font-size: 7px; }
+      .game-card .icon { font-size: 22px; }
+      .game-card h3 { font-size: 11px; }
+      .game-card p { font-size: 8px; }
+      .level-btn { font-size: 6px; padding: 1px 5px; min-height: 16px; }
+      .btn { font-size: 7px !important; padding: 2px 6px !important; min-height: 18px !important; }
+      .game-info { font-size: 7px; gap: 4px; }
+      .mines-board { width: min(92vw, 48vh, 300px); }
+      .mines-board .cell { font-size: clamp(8px, 2vh, 14px); }
+    }
+
+    @media (max-width: 320px) {
+      .sudoku-board { width: min(92vw, 38vh, 200px); }
+      .sudoku-board .cell { font-size: 6px !important; }
+      .sudoku-numpad { width: min(85vw, 35vh, 160px) !important; }
+      .sudoku-numpad button { min-height: 16px !important; font-size: 9px !important; }
+      .wordsearch-grid { width: min(90vw, 35vh, 170px); }
+      .wordsearch-grid .cell { font-size: 5px !important; }
+      .wordsearch-list { min-width: 35px; max-width: 60px; }
+      .wordsearch-list .word-item { font-size: 5px; }
+      .mines-board { width: min(94vw, 42vh, 260px); }
+      .mines-board .cell { font-size: clamp(7px, 1.8vh, 12px); }
+    }
+
+    @media (max-height: 600px) and (orientation: landscape) {
+      .sudoku-board { width: min(55vh, 50vw, 320px); }
+      .sudoku-board .cell { font-size: clamp(8px, 2.2vh, 14px) !important; }
+      .sudoku-numpad { width: min(50vh, 45vw, 260px) !important; }
+      .sudoku-numpad button { min-height: 20px !important; font-size: 12px !important; }
+      .wordsearch-grid { width: min(48vh, 42vw, 280px); }
+      .wordsearch-grid .cell { font-size: clamp(7px, 1.8vh, 12px); }
+      .wordsearch-list { max-height: 42vh; min-width: 50px; max-width: 80px; }
+      .wordsearch-list .word-item { font-size: 7px; }
+      .game-info { font-size: 7px; gap: 4px; }
+      .level-btn { font-size: 6px; padding: 1px 5px; min-height: 14px; }
+      .btn { font-size: 7px !important; padding: 2px 6px !important; min-height: 18px !important; }
+      .overlay-header { min-height: 28px; padding: 2px 8px; }
+      .overlay-header h2 { font-size: 12px; }
+      .close-btn { padding: 2px 8px; font-size: 10px; }
+      .mines-board { width: min(58vh, 48vw, 340px); }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+      .sudoku-board { width: min(42vh, 38vw, 220px); }
+      .sudoku-board .cell { font-size: 6px !important; }
+      .sudoku-numpad { width: min(38vh, 35vw, 180px) !important; }
+      .sudoku-numpad button { min-height: 16px !important; font-size: 9px !important; }
+      .wordsearch-grid { width: min(38vh, 32vw, 180px); }
+      .wordsearch-grid .cell { font-size: 5px !important; }
+      .wordsearch-list { max-height: 35vh; min-width: 40px; max-width: 65px; }
+      .wordsearch-list .word-item { font-size: 6px; }
+      .game-info { font-size: 6px; gap: 2px; }
+      .level-btn { font-size: 5px; padding: 0 4px; min-height: 12px; }
+      .btn { font-size: 6px !important; padding: 1px 4px !important; min-height: 14px !important; }
+      .mines-board { width: min(44vh, 38vw, 260px); }
+    }
+
+    @media (max-width: 550px) {
+      .wordsearch-wrapper {
+        flex-direction: column;
+        padding: 1px;
+        gap: 2px;
+      }
+      .wordsearch-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        min-width: unset;
+        max-width: 100%;
+        height: auto;
+        max-height: 44px;
+        padding: 2px 6px;
+        overflow-y: auto;
+        gap: 2px;
+        border-radius: 6px;
+      }
+      .wordsearch-list .word-item {
+        font-size: clamp(7px, 1.2vh, 9px);
+        padding: 0 5px;
+        white-space: nowrap;
+      }
+      .wordsearch-grid {
+        width: min(82vw, 50vh, 350px);
+      }
+      .wordsearch-grid .cell {
+        font-size: clamp(9px, 2.2vh, 16px);
+      }
+      .wordsearch-hint {
+        font-size: 7px;
+        min-height: 12px;
+      }
+    }
+
+    @media (max-width: 380px) and (max-height: 600px) {
+      .wordsearch-list {
+        max-height: 34px;
+        padding: 1px 4px;
+      }
+      .wordsearch-list .word-item {
+        font-size: 6px;
+        padding: 0 3px;
+      }
+    }
+
+    /* ============================================================
+       SIDEBAR.JS COMPATIBILITY — LEFT SIDE
+       ============================================================ */
+    .app-container header { padding-left: 56px !important; padding-right: 14px !important; }
+    .app-container header h1 { margin: 0 !important; }
+    body:has(.game-overlay.active) .menu-toggle { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <header>
+    <h1>📦 SafeBox</h1>
+  </header>
+  <main>
+    <h2>🎮 Offline Games</h2>
+    <p class="sub">Complete all levels to unlock more!</p>
+    <div class="game-grid">
+      <div class="game-card" onclick="openGame('sudoku')">
+        <span class="icon">🔢</span>
+        <h3>Sudoku</h3>
+        <p>logic · timer</p>
+        <span class="tag">levels + timed</span>
+        <div class="badge" id="sudokuProgress">0 / 7</div>
+      </div>
+      <div class="game-card" onclick="openGame('wordsearch')">
+        <span class="icon">🔍</span>
+        <h3>Word Search</h3>
+        <p>find words</p>
+        <span class="tag">levels + timed</span>
+        <div class="badge" id="wordProgress">0 / 8</div>
+      </div>
+      <div class="game-card" onclick="openGame('minesweeper')">
+        <span class="icon">💣</span>
+        <h3>Minesweeper</h3>
+        <p>classic · mines</p>
+        <span class="tag">levels + timed</span>
+        <div class="badge" id="minesProgress">0 / 4</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- OVERLAY -->
+<div class="game-overlay" id="gameOverlay">
+  <div class="overlay-header">
+    <h2 id="gameTitle">🎮 Game</h2>
+    <button class="close-btn" onclick="closeGame()">✕ Close</button>
+  </div>
+  <div class="game-content" id="gameContent"></div>
+</div>
+
+<script>
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+  function logoutUser() {
+    if (typeof window.logoutUser === 'function' && window.logoutUser !== logoutUser) {
+      window.logoutUser();
+      return;
+    }
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    window.location.href = 'login.html';
+  }
+
+  // ============================================================
+  // PROGRESS TRACKING
+  // ============================================================
+  function getCompletedLevels(gameKey) {
+    try {
+      const data = JSON.parse(localStorage.getItem(gameKey + '_completed') || '[]');
+      return data;
+    } catch { return []; }
+  }
+
+  function markLevelCompleted(gameKey, levelId) {
+    let completed = getCompletedLevels(gameKey);
+    if (!completed.includes(levelId)) {
+      completed.push(levelId);
+      localStorage.setItem(gameKey + '_completed', JSON.stringify(completed));
+    }
+    updateProgressBadges();
+  }
+
+  function isLevelUnlocked(gameKey, levelId, allLevels) {
+    const completed = getCompletedLevels(gameKey);
+    if (levelId === allLevels[0].id) return true;
+    const idx = allLevels.findIndex(l => l.id === levelId);
+    if (idx <= 0) return true;
+    const prevId = allLevels[idx - 1].id;
+    return completed.includes(prevId);
+  }
+
+  function updateProgressBadges() {
+    const sudokuCompleted = getCompletedLevels('sudoku').length;
+    const sudokuTotal = sudokuLevels.length;
+    const el = document.getElementById('sudokuProgress');
+    if (el) el.textContent = `${sudokuCompleted} / ${sudokuTotal}`;
+    
+    const wordCompleted = getCompletedLevels('wordsearch').length;
+    const wordTotal = wordPuzzles.length;
+    const el2 = document.getElementById('wordProgress');
+    if (el2) el2.textContent = `${wordCompleted} / ${wordTotal}`;
+
+    const minesCompleted = getCompletedLevels('minesweeper').length;
+    const minesTotal = minesLevels.length;
+    const el3 = document.getElementById('minesProgress');
+    if (el3) el3.textContent = `${minesCompleted} / ${minesTotal}`;
+  }
+
+  // ============================================================
+  // GLOBAL
+  // ============================================================
+  let currentGame = null;
+  let sudokuTimerInterval = null, wordTimerInterval = null, minesTimerInterval = null;
+  let sudokuSeconds = 0, wordSeconds = 0, minesSeconds = 0;
+  let sudokuTimedMode = false, wordTimedMode = false, minesTimedMode = false;
+  let sudokuTimeLimit = 0, wordTimeLimit = 0, minesTimeLimit = 0;
+  let sudokuSolvedFlag = false;
+  let wordSolvedFlag = false;
+  let minesSolvedFlag = false;
+
+  function openGame(name) {
+    currentGame = name;
+    const overlay = document.getElementById('gameOverlay');
+    const title = document.getElementById('gameTitle');
+    const content = document.getElementById('gameContent');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if (name === 'sudoku') { title.textContent = '🔢 Sudoku'; loadSudoku(content); }
+    else if (name === 'wordsearch') { title.textContent = '🔍 Word Search'; loadWordSearch(content); }
+    else if (name === 'minesweeper') { title.textContent = '💣 Minesweeper'; loadMinesweeper(content); }
+  }
+
+  function closeGame() {
+    document.getElementById('gameOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+    currentGame = null;
+    if (sudokuTimerInterval) clearInterval(sudokuTimerInterval);
+    if (wordTimerInterval) clearInterval(wordTimerInterval);
+    if (minesTimerInterval) clearInterval(minesTimerInterval);
+    sudokuTimedMode = false; wordTimedMode = false; minesTimedMode = false;
+    if (window._wordDragCleanup) window._wordDragCleanup();
+    updateProgressBadges();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('gameOverlay').classList.contains('active')) closeGame();
+  });
+
+  function showToast(msg, type='info') {
+    const old = document.querySelector('.toast'); if(old) old.remove();
+    const t = document.createElement('div');
+    t.className = 'toast ' + (type==='success'?'success':type==='error'?'error':type==='warning'?'warning':type==='gold'?'gold':'');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transition = '0.3s';
+      setTimeout(() => t.remove(), 300);
+    }, 1600);
+  }
+
+  // ============================================================
+  // SUDOKU
+  // ============================================================
+  const sudokuLevels = [
+    { id: 'beginner', label: '🌱 Beginner', clues: 40, timeLimit: 0 },
+    { id: 'easy', label: '👍 Easy', clues: 34, timeLimit: 0 },
+    { id: 'medium', label: '⚡ Medium', clues: 28, timeLimit: 0 },
+    { id: 'hard', label: '🔥 Hard', clues: 22, timeLimit: 0 },
+    { id: 'expert', label: '🧠 Expert', clues: 17, timeLimit: 0 },
+    { id: 'master', label: '👑 Master', clues: 12, timeLimit: 0 },
+    { id: 'timed', label: '⏱️ Timed 3min', clues: 20, timeLimit: 180 }
+  ];
+  let sudokuState = { board: [], solution: [], given: [], selectedRow: -1, selectedCol: -1, errors: 0, levelId: 'beginner' };
+
+  function loadSudoku(container) {
+    const lvl = sudokuLevels.find(l => l.id === sudokuState.levelId) || sudokuLevels[0];
+    const p = generateSudoku(lvl.clues);
+    sudokuState.board = p.board; sudokuState.solution = p.solution; sudokuState.given = p.given;
+    sudokuState.errors = 0; sudokuState.selectedRow = -1; sudokuState.selectedCol = -1;
+    sudokuSolvedFlag = false;
+    if (sudokuTimerInterval) clearInterval(sudokuTimerInterval);
+    sudokuSeconds = 0;
+    sudokuTimedMode = lvl.timeLimit > 0;
+    sudokuTimeLimit = lvl.timeLimit;
+
+    const completed = getCompletedLevels('sudoku');
+    const allCompleted = completed.length === sudokuLevels.length;
+
+    container.innerHTML = `
+      <div class="sudoku-wrapper">
+        <div class="level-selector">
+          ${sudokuLevels.map(l => {
+            const isActive = l.id === sudokuState.levelId;
+            const isCompleted = completed.includes(l.id);
+            const unlocked = isLevelUnlocked('sudoku', l.id, sudokuLevels);
+            const timedClass = l.timeLimit > 0 ? 'timed' : '';
+            const completedClass = isCompleted ? 'completed' : '';
+            const lockedClass = !unlocked ? 'locked' : '';
+            return `<button class="level-btn ${isActive ? 'active' : ''} ${timedClass} ${completedClass} ${lockedClass}" 
+                    onclick="${unlocked ? `setSudokuLevel('${l.id}')` : ''}"
+                    ${!unlocked ? 'disabled' : ''}>
+              ${l.label}${isCompleted ? ' ✓' : ''}
+            </button>`;
+          }).join('')}
+        </div>
+        ${allCompleted ? `<div style="color:#fbbf24;font-size:clamp(10px,1.2vh,12px);font-weight:600;padding:2px;">🏆 ALL LEVELS COMPLETED! 🏆</div>` : ''}
+        <div class="game-info">
+          <span>❌ <span class="value" id="sudokuErrors">0</span></span>
+          <span>⏱️ <span class="value ${sudokuTimedMode ? 'timed-warning' : ''}" id="sudokuTimer">00:00</span></span>
+          <span>⏳ <span class="value ${sudokuTimedMode ? 'timed-warning' : ''}" id="sudokuTimeLimit">${sudokuTimedMode ? '3:00' : '--'}</span></span>
+          <span>💡 <span class="value" id="sudokuHintCount">3</span></span>
+        </div>
+        <div class="game-buttons">
+          <button class="btn btn-purple" onclick="sudokuUseHint()">💡 Hint (${getSudokuHintsLeft()})</button>
+        </div>
+        <div class="sudoku-board" id="sudokuBoard"></div>
+        <div class="sudoku-numpad" id="sudokuNumpad">
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button onclick="sudokuInput(${n})">${n}</button>`).join('')}
+          <button class="clear-btn" onclick="sudokuInput(0)">✕</button>
+        </div>
+        <div class="game-buttons">
+          <button class="btn btn-secondary" onclick="newSudoku()">🔄 New</button>
+          <button class="btn btn-success" onclick="checkSudoku()">✅ Check</button>
+        </div>
+      </div>
+    `;
+    renderSudokuBoard();
+    updateSudokuTimerDisplay();
+    updateSudokuHintDisplay();
+    sudokuTimerInterval = setInterval(() => {
+      sudokuSeconds++;
+      updateSudokuTimerDisplay();
+      if (sudokuTimedMode && sudokuTimeLimit > 0 && sudokuSeconds >= sudokuTimeLimit) {
+        showToast('⏰ Time is up! Try again.','warning');
+        clearInterval(sudokuTimerInterval);
+      }
+    }, 1000);
+  }
+
+  function getSudokuHintsLeft() {
+    const used = parseInt(localStorage.getItem('sudokuHintsUsed_' + sudokuState.levelId) || '0');
+    return Math.max(0, 3 - used);
+  }
+
+  function updateSudokuHintDisplay() {
+    const el = document.getElementById('sudokuHintCount');
+    if (el) el.textContent = getSudokuHintsLeft();
+  }
+
+  function updateSudokuTimerDisplay() {
+    const m = String(Math.floor(sudokuSeconds/60)).padStart(2,'0');
+    const s = String(sudokuSeconds%60).padStart(2,'0');
+    const el = document.getElementById('sudokuTimer');
+    if (el) el.textContent = `${m}:${s}`;
+    const limitEl = document.getElementById('sudokuTimeLimit');
+    if (limitEl) {
+      if (sudokuTimedMode && sudokuTimeLimit > 0) {
+        const remain = Math.max(0, sudokuTimeLimit - sudokuSeconds);
+        const rm = String(Math.floor(remain/60)).padStart(2,'0');
+        const rs = String(remain%60).padStart(2,'0');
+        limitEl.textContent = `${rm}:${rs}`;
+      } else {
+        limitEl.textContent = '--';
+      }
+    }
+  }
+
+  function setSudokuLevel(id) {
+    sudokuState.levelId = id;
+    loadSudoku(document.getElementById('gameContent'));
+  }
+
+  function generateSudoku(clues) {
+    let board = [
+      [5,3,4,6,7,8,9,1,2],[6,7,2,1,9,5,3,4,8],[1,9,8,3,4,2,5,6,7],
+      [8,5,9,7,6,1,4,2,3],[4,2,6,8,5,3,7,9,1],[7,1,3,9,2,4,8,5,6],
+      [9,6,1,5,3,7,2,8,4],[2,8,7,4,1,9,6,3,5],[3,4,5,2,8,6,1,7,9]
+    ];
+    const solution = board.map(r => [...r]);
+    const given = Array(9).fill().map(() => Array(9).fill(false));
+    let pos = [];
+    for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) pos.push([i,j]);
+    for (let i = pos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pos[i], pos[j]] = [pos[j], pos[i]];
+    }
+    for (let k = 0; k < pos.length; k++) {
+      const [r, c] = pos[k];
+      if (k < clues) given[r][c] = true;
+      else board[r][c] = 0;
+    }
+    return { board, solution, given };
+  }
+
+  function renderSudokuBoard() {
+    const boardEl = document.getElementById('sudokuBoard');
+    if (!boardEl) return;
+    boardEl.innerHTML = '';
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        const val = sudokuState.board[r][c];
+        if (sudokuState.given[r][c]) {
+          cell.classList.add('given');
+          cell.textContent = val;
+        } else if (val === 0) {
+          cell.textContent = '';
+        } else {
+          cell.classList.add('user-input');
+          cell.textContent = val;
+        }
+        if (sudokuState.selectedRow === r && sudokuState.selectedCol === c) {
+          cell.classList.add('selected');
+        }
+        if (r % 3 === 0) cell.classList.add('border-top');
+        if (c % 3 === 0) cell.classList.add('border-left');
+        if (r === 8 || r % 3 === 2) cell.classList.add('border-bottom');
+        if (c === 8 || c % 3 === 2) cell.classList.add('border-right');
+        cell.addEventListener('click', function() {
+          const row = parseInt(this.dataset.row);
+          const col = parseInt(this.dataset.col);
+          if (sudokuState.given[row][col]) {
+            showToast('🔒 Pre-filled', 'error');
+            return;
+          }
+          sudokuState.selectedRow = row;
+          sudokuState.selectedCol = col;
+          renderSudokuBoard();
+        });
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  function sudokuInput(num) {
+    if (sudokuState.selectedRow < 0 || sudokuState.selectedCol < 0) {
+      showToast('👆 Tap a cell', 'info');
+      return;
+    }
+    const r = sudokuState.selectedRow;
+    const c = sudokuState.selectedCol;
+    if (sudokuState.given[r][c]) {
+      showToast('🔒 Pre-filled', 'error');
+      return;
+    }
+    if (sudokuTimedMode && sudokuSeconds >= sudokuTimeLimit) {
+      showToast('⏰ Time is up!', 'warning');
+      return;
+    }
+    if (num === 0) {
+      sudokuState.board[r][c] = 0;
+      renderSudokuBoard();
+      return;
+    }
+    if (num === sudokuState.solution[r][c]) {
+      sudokuState.board[r][c] = num;
+      renderSudokuBoard();
+      if (isSudokuSolved() && !sudokuSolvedFlag) {
+        sudokuSolvedFlag = true;
+        showToast('🎉 Solved!', 'success');
+        clearInterval(sudokuTimerInterval);
+        markLevelCompleted('sudoku', sudokuState.levelId);
+        if (getCompletedLevels('sudoku').length === sudokuLevels.length) {
+          showToast('🏆 ALL SUDOKU LEVELS COMPLETED! 🏆', 'gold');
+        }
+      }
+    } else {
+      sudokuState.errors++;
+      const el = document.getElementById('sudokuErrors');
+      if (el) el.textContent = sudokuState.errors;
+      showToast('❌ Wrong', 'error');
+      const cells = document.querySelectorAll('#sudokuBoard .cell');
+      const idx = r * 9 + c;
+      if (cells[idx]) {
+        cells[idx].classList.add('error');
+        setTimeout(() => cells[idx].classList.remove('error'), 500);
+      }
+    }
+  }
+
+  function isSudokuSolved() {
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (sudokuState.board[r][c] !== sudokuState.solution[r][c]) return false;
+      }
+    }
+    return true;
+  }
+
+  function newSudoku() {
+    loadSudoku(document.getElementById('gameContent'));
+  }
+
+  function sudokuUseHint() {
+    if (sudokuTimedMode && sudokuSeconds >= sudokuTimeLimit) {
+      showToast('⏰ Time is up!', 'warning');
+      return;
+    }
+    let used = parseInt(localStorage.getItem('sudokuHintsUsed_' + sudokuState.levelId) || '0');
+    if (used >= 3) {
+      showToast('⚠️ No hints left!', 'warning');
+      return;
+    }
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (!sudokuState.given[r][c] && sudokuState.board[r][c] !== sudokuState.solution[r][c]) {
+          sudokuState.board[r][c] = sudokuState.solution[r][c];
+          used++;
+          localStorage.setItem('sudokuHintsUsed_' + sudokuState.levelId, String(used));
+          renderSudokuBoard();
+          updateSudokuHintDisplay();
+          showToast(`💡 Hint placed at (${r+1},${c+1})`, 'info');
+          if (isSudokuSolved() && !sudokuSolvedFlag) {
+            sudokuSolvedFlag = true;
+            showToast('🎉 Solved!', 'success');
+            clearInterval(sudokuTimerInterval);
+            markLevelCompleted('sudoku', sudokuState.levelId);
+            if (getCompletedLevels('sudoku').length === sudokuLevels.length) {
+              showToast('🏆 ALL SUDOKU LEVELS COMPLETED! 🏆', 'gold');
+            }
+          }
+          return;
+        }
+      }
+    }
+    showToast('🎉 Already solved!', 'success');
+  }
+
+  function checkSudoku() {
+    if (sudokuTimedMode && sudokuSeconds >= sudokuTimeLimit) {
+      showToast('⏰ Time is up!', 'warning');
+      return;
+    }
+    let correct = true, hasErr = false;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (!sudokuState.given[r][c] && sudokuState.board[r][c] !== sudokuState.solution[r][c]) {
+          correct = false;
+          if (sudokuState.board[r][c] !== 0) {
+            hasErr = true;
+            const cells = document.querySelectorAll('#sudokuBoard .cell');
+            const idx = r * 9 + c;
+            if (cells[idx]) cells[idx].classList.add('error');
+          }
+        }
+      }
+    }
+    if (correct) {
+      showToast('🎉 All correct!', 'success');
+      if (!sudokuSolvedFlag) {
+        sudokuSolvedFlag = true;
+        clearInterval(sudokuTimerInterval);
+        markLevelCompleted('sudoku', sudokuState.levelId);
+        if (getCompletedLevels('sudoku').length === sudokuLevels.length) {
+          showToast('🏆 ALL SUDOKU LEVELS COMPLETED! 🏆', 'gold');
+        }
+      }
+    } else if (!hasErr) {
+      showToast('⚠️ Keep going!', 'info');
+    } else {
+      showToast('❌ Check highlighted', 'error');
+      setTimeout(() => {
+        document.querySelectorAll('#sudokuBoard .cell.error').forEach(el => el.classList.remove('error'));
+      }, 2000);
+    }
+  }
+
+  // ============================================================
+  // WORD SEARCH
+  // ============================================================
+  const wordPuzzles = [
+    { id: 'starter', label: '🌱 Starter', words: ['CAT','DOG','SUN','MOON','STAR','FISH','BIRD','TREE'], size: 8, timeLimit: 0 },
+    { id: 'easy', label: '👍 Easy', words: ['HAPPY','SMILE','LAUGH','JOY','PEACE','LOVE','HOPE','FAITH'], size: 8, timeLimit: 0 },
+    { id: 'medium', label: '⚡ Medium', words: ['HOUSE','HOME','ROOM','DOOR','WINDOW','WALL','FLOOR','STAIR'], size: 9, timeLimit: 0 },
+    { id: 'hard', label: '🔥 Hard', words: ['APPLE','BANANA','GRAPE','ORANGE','PEACH','MANGO','KIWI','LEMON','PAPAYA'], size: 9, timeLimit: 0 },
+    { id: 'expert', label: '🧠 Expert', words: ['OCEAN','RIVER','LAKE','MOUNTAIN','FOREST','DESERT','ISLAND','VALLEY','GLACIER'], size: 10, timeLimit: 0 },
+    { id: 'master', label: '👑 Master', words: ['PYTHON','JAVA','RUST','KOTLIN','SWIFT','GO','RUBY','PHP','DART','SCALA'], size: 10, timeLimit: 0 },
+    { id: 'legend', label: '🏆 Legend', words: ['GALAXY','NEBULA','COMET','PLANET','STAR','MOON','SUN','ORBIT','ASTEROID','METEOR'], size: 11, timeLimit: 0 },
+    { id: 'timed', label: '⏱️ Timed 2min', words: ['CLOUD','STORM','LIGHTNING','THUNDER','RAIN','WIND','SNOW','HAIL','FOG','MIST'], size: 10, timeLimit: 120 }
+  ];
+  let wordState = {
+    puzzle: null,
+    grid: [],
+    foundWords: [],
+    selectedCells: [],
+    gridSize: 8,
+    isDragging: false,
+    startCell: null,
+    levelId: 'starter'
+  };
+
+  function loadWordSearch(container) {
+    const lvl = wordPuzzles.find(l => l.id === wordState.levelId) || wordPuzzles[0];
+    const puzzle = lvl;
+    wordState.puzzle = puzzle;
+    wordState.foundWords = [];
+    wordState.selectedCells = [];
+    wordState.gridSize = puzzle.size;
+    const grid = generateWordGrid(puzzle.words, puzzle.size);
+    wordState.grid = grid;
+    wordSolvedFlag = false;
+    if (wordTimerInterval) clearInterval(wordTimerInterval);
+    wordSeconds = 0;
+    wordTimedMode = lvl.timeLimit > 0;
+    wordTimeLimit = lvl.timeLimit;
+
+    const completed = getCompletedLevels('wordsearch');
+    const allCompleted = completed.length === wordPuzzles.length;
+
+    container.innerHTML = `
+      <div class="wordsearch-wrapper">
+        <div class="wordsearch-grid-container">
+          <div class="level-selector">
+            ${wordPuzzles.map(l => {
+              const isActive = l.id === wordState.levelId;
+              const isCompleted = completed.includes(l.id);
+              const unlocked = isLevelUnlocked('wordsearch', l.id, wordPuzzles);
+              const timedClass = l.timeLimit > 0 ? 'timed' : '';
+              const completedClass = isCompleted ? 'completed' : '';
+              const lockedClass = !unlocked ? 'locked' : '';
+              return `<button class="level-btn ${isActive ? 'active' : ''} ${timedClass} ${completedClass} ${lockedClass}" 
+                      onclick="${unlocked ? `setWordLevel('${l.id}')` : ''}"
+                      ${!unlocked ? 'disabled' : ''}>
+                ${l.label}${isCompleted ? ' ✓' : ''}
+              </button>`;
+            }).join('')}
+          </div>
+          ${allCompleted ? `<div style="color:#fbbf24;font-size:clamp(10px,1.2vh,12px);font-weight:600;padding:2px;">🏆 ALL LEVELS COMPLETED! 🏆</div>` : ''}
+          <div class="game-info">
+            <span>🔍 <span class="value" id="wordFoundCount">0/${puzzle.words.length}</span></span>
+            <span>⏱️ <span class="value ${wordTimedMode ? 'timed-warning' : ''}" id="wordTimer">00:00</span></span>
+            <span>⏳ <span class="value ${wordTimedMode ? 'timed-warning' : ''}" id="wordTimeLimit">${wordTimedMode ? '2:00' : '--'}</span></span>
+            <span>💡 <span class="value" id="wordHintCount">3</span></span>
+          </div>
+          <div class="game-buttons">
+            <button class="btn btn-purple" onclick="wordUseHint()">💡 Hint (${getWordHintsLeft()})</button>
+          </div>
+          <div class="wordsearch-grid" id="wordGrid" style="grid-template-columns: repeat(${puzzle.size}, 1fr);"></div>
+          <div class="wordsearch-hint" id="wordHint">👆 Drag across letters</div>
+          <div class="game-buttons">
+            <button class="btn btn-secondary" onclick="newWordSearch()">🔄 New</button>
+            <button class="btn btn-danger" onclick="clearWordSelection()">✕ Clear</button>
+          </div>
+        </div>
+        <div class="wordsearch-list" id="wordList">
+          ${puzzle.words.map(w => `<div class="word-item" data-word="${w}">${w}</div>`).join('')}
+        </div>
+      </div>
+    `;
+    renderWordGrid();
+    setupWordDragEvents();
+    updateWordTimerDisplay();
+    updateWordHintDisplay();
+    wordTimerInterval = setInterval(() => {
+      wordSeconds++;
+      updateWordTimerDisplay();
+      if (wordTimedMode && wordTimeLimit > 0 && wordSeconds >= wordTimeLimit) {
+        showToast('⏰ Time is up! Try again.', 'warning');
+        clearInterval(wordTimerInterval);
+      }
+    }, 1000);
+    updateWordFound();
+  }
+
+  function getWordHintsLeft() {
+    const used = parseInt(localStorage.getItem('wordHintsUsed_' + wordState.levelId) || '0');
+    return Math.max(0, 3 - used);
+  }
+
+  function updateWordHintDisplay() {
+    const el = document.getElementById('wordHintCount');
+    if (el) el.textContent = getWordHintsLeft();
+  }
+
+  function updateWordTimerDisplay() {
+    const m = String(Math.floor(wordSeconds/60)).padStart(2,'0');
+    const s = String(wordSeconds%60).padStart(2,'0');
+    const el = document.getElementById('wordTimer');
+    if (el) el.textContent = `${m}:${s}`;
+    const limitEl = document.getElementById('wordTimeLimit');
+    if (limitEl) {
+      if (wordTimedMode && wordTimeLimit > 0) {
+        const remain = Math.max(0, wordTimeLimit - wordSeconds);
+        const rm = String(Math.floor(remain/60)).padStart(2,'0');
+        const rs = String(remain%60).padStart(2,'0');
+        limitEl.textContent = `${rm}:${rs}`;
+      } else {
+        limitEl.textContent = '--';
+      }
+    }
+  }
+
+  function setWordLevel(id) {
+    wordState.levelId = id;
+    loadWordSearch(document.getElementById('gameContent'));
+  }
+
+  function generateWordGrid(words, size) {
+    const grid = Array(size).fill().map(() => Array(size).fill(''));
+    const dirs = [[0,1],[1,0],[1,1],[1,-1],[0,-1],[-1,0],[-1,-1],[-1,1]];
+    words.forEach(word => {
+      let placed = false, attempts = 0;
+      while (!placed && attempts < 500) {
+        attempts++;
+        const r = Math.floor(Math.random() * size);
+        const c = Math.floor(Math.random() * size);
+        const d = dirs[Math.floor(Math.random() * dirs.length)];
+        let can = true;
+        for (let i = 0; i < word.length; i++) {
+          const nr = r + d[0] * i;
+          const nc = c + d[1] * i;
+          if (nr < 0 || nr >= size || nc < 0 || nc >= size || (grid[nr][nc] !== '' && grid[nr][nc] !== word[i])) {
+            can = false;
+            break;
+          }
+        }
+        if (can) {
+          for (let i = 0; i < word.length; i++) {
+            const nr = r + d[0] * i;
+            const nc = c + d[1] * i;
+            grid[nr][nc] = word[i];
+          }
+          placed = true;
+        }
+      }
+    });
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] === '') grid[r][c] = letters[Math.floor(Math.random() * 26)];
+      }
+    }
+    return grid;
+  }
+
+  function renderWordGrid() {
+    const grid = document.getElementById('wordGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const size = wordState.gridSize;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        cell.textContent = wordState.grid[r][c];
+        const isFound = wordState.foundWords.some(w => w.cells.some(([cr, cc]) => cr === r && cc === c));
+        if (isFound) cell.classList.add('found');
+        const isSelected = wordState.selectedCells.some(([sr, sc]) => sr === r && sc === c);
+        if (isSelected) cell.classList.add('selected');
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function setupWordDragEvents() {
+    const grid = document.getElementById('wordGrid');
+    if (!grid) return;
+
+    if (window._wordDragCleanup) {
+      window._wordDragCleanup();
+    }
+
+    let activePointerId = null;
+
+    function getCellFromPoint(x, y) {
+      const target = document.elementFromPoint(x, y);
+      if (!target) return null;
+      if (target.closest) {
+        return target.closest(".cell");
+      }
+      return null;
+    }
+
+    function getCellFromEvent(e) {
+      return getCellFromPoint(e.clientX, e.clientY);
+    }
+
+    function handleStart(e) {
+      if (e.isPrimary === false) return;
+
+      const cell = getCellFromEvent(e);
+      if (!cell) return;
+
+      const r = parseInt(cell.dataset.row);
+      const c = parseInt(cell.dataset.col);
+      if (isNaN(r) || isNaN(c)) return;
+
+      if (wordState.foundWords && wordState.foundWords.some(found =>
+        found.cells && found.cells.some(([fr, fc]) => fr === r && fc === c)
+      )) {
+        return;
+      }
+
+      if (wordTimedMode && wordSeconds >= wordTimeLimit) {
+        showToast('⏰ Time is up!', 'warning');
+        return;
+      }
+
+      e.preventDefault();
+      activePointerId = e.pointerId;
+
+      try {
+        grid.setPointerCapture(e.pointerId);
+      } catch (err) {
+        // Ignore if pointer capture is unavailable
+      }
+
+      wordState.isDragging = true;
+      wordState.startCell = [r, c];
+      wordState.selectedCells = [[r, c]];
+
+      renderWordGrid();
+      updateWordHint();
+    }
+
+    function handleMove(e) {
+      if (!wordState.isDragging) return;
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+
+      e.preventDefault();
+
+      const cell = getCellFromEvent(e);
+      if (!cell) return;
+
+      const r = parseInt(cell.dataset.row);
+      const c = parseInt(cell.dataset.col);
+      if (isNaN(r) || isNaN(c)) return;
+
+      const start = wordState.startCell;
+      if (!start) return;
+
+      const startR = start[0];
+      const startC = start[1];
+
+      const dr = r - startR;
+      const dc = c - startC;
+
+      if (dr === 0 && dc === 0) {
+        wordState.selectedCells = [[startR, startC]];
+        renderWordGrid();
+        return;
+      }
+
+      const absDr = Math.abs(dr);
+      const absDc = Math.abs(dc);
+
+      if (!(dr === 0 || dc === 0 || absDr === absDc)) {
+        return;
+      }
+
+      const stepR = dr === 0 ? 0 : dr > 0 ? 1 : -1;
+      const stepC = dc === 0 ? 0 : dc > 0 ? 1 : -1;
+      const length = Math.max(absDr, absDc) + 1;
+
+      const newSelection = [];
+      for (let i = 0; i < length; i++) {
+        const cellR = startR + (stepR * i);
+        const cellC = startC + (stepC * i);
+
+        if (cellR < 0 || cellR >= wordState.gridSize || cellC < 0 || cellC >= wordState.gridSize) {
+          return;
+        }
+
+        if (!newSelection.some(([sr2, sc2]) => sr2 === cellR && sc2 === cellC)) {
+          newSelection.push([cellR, cellC]);
+        }
+      }
+
+      wordState.selectedCells = newSelection;
+      renderWordGrid();
+      updateWordHint();
+    }
+
+    function handleEnd(e) {
+      if (!wordState.isDragging) return;
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+
+      e.preventDefault();
+
+      if (wordState.selectedCells && wordState.selectedCells.length >= 3) {
+        checkWordSearchSelection();
+      }
+
+      wordState.isDragging = false;
+      wordState.startCell = null;
+      activePointerId = null;
+
+      try {
+        if (grid.hasPointerCapture && grid.hasPointerCapture(e.pointerId)) {
+          grid.releasePointerCapture(e.pointerId);
+        }
+      } catch (err) {
+        // Ignore pointer capture errors
+      }
+
+      renderWordGrid();
+      updateWordHint();
+    }
+
+    function handleCancel(e) {
+      if (!wordState.isDragging) return;
+
+      e.preventDefault();
+
+      wordState.isDragging = false;
+      wordState.startCell = null;
+      wordState.selectedCells = [];
+
+      activePointerId = null;
+
+      try {
+        if (grid.hasPointerCapture && grid.hasPointerCapture(e.pointerId)) {
+          grid.releasePointerCapture(e.pointerId);
+        }
+      } catch (err) {
+        // Ignore pointer capture errors
+      }
+
+      renderWordGrid();
+      updateWordHint();
+    }
+
+    grid.addEventListener("pointerdown", handleStart, { passive: false });
+    grid.addEventListener("pointermove", handleMove, { passive: false });
+    grid.addEventListener("pointerup", handleEnd, { passive: false });
+    grid.addEventListener("pointercancel", handleCancel, { passive: false });
+
+    window._wordDragCleanup = function() {
+      grid.removeEventListener("pointerdown", handleStart);
+      grid.removeEventListener("pointermove", handleMove);
+      grid.removeEventListener("pointerup", handleEnd);
+      grid.removeEventListener("pointercancel", handleCancel);
+
+      try {
+        if (activePointerId !== null && grid.hasPointerCapture && grid.hasPointerCapture(activePointerId)) {
+          grid.releasePointerCapture(activePointerId);
+        }
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+      activePointerId = null;
+    };
+  }
+
+  function updateWordHint() {
+    const h = document.getElementById('wordHint');
+    if (!h) return;
+    if (wordState.selectedCells.length === 0) {
+      h.textContent = '👆 Drag across letters';
+      return;
+    }
+    const word = wordState.selectedCells.map(([r, c]) => wordState.grid[r][c]).join('');
+    h.textContent = `📝 "${word}" (${wordState.selectedCells.length})`;
+  }
+
+  function checkWordSearchSelection() {
+    if (wordState.selectedCells.length < 3) return;
+    if (wordTimedMode && wordSeconds >= wordTimeLimit) {
+      showToast('⏰ Time is up!', 'warning');
+      return;
+    }
+    
+    const selected = wordState.selectedCells.map(([r, c]) => wordState.grid[r][c]).join('');
+    const rev = selected.split('').reverse().join('');
+    const found = wordState.puzzle.words.find(w => w === selected || w === rev);
+    
+    if (found) {
+      if (wordState.foundWords.some(w => w.word === found)) {
+        showToast(`⚠️ "${found}" already found`, 'info');
+        wordState.selectedCells = [];
+        renderWordGrid();
+        updateWordHint();
+        return;
+      }
+      wordState.foundWords.push({
+        word: found,
+        cells: [...wordState.selectedCells]
+      });
+      wordState.selectedCells = [];
+      updateWordFound();
+      renderWordGrid();
+      updateWordHint();
+      showToast(`✅ Found: ${found}`, 'success');
+      
+      document.querySelectorAll('.word-item').forEach(item => {
+        if (item.dataset.word === found) item.classList.add('found');
+      });
+      
+      if (wordState.foundWords.length === wordState.puzzle.words.length && !wordSolvedFlag) {
+        wordSolvedFlag = true;
+        showToast('🎉 All words found!', 'success');
+        clearInterval(wordTimerInterval);
+        markLevelCompleted('wordsearch', wordState.levelId);
+        if (getCompletedLevels('wordsearch').length === wordPuzzles.length) {
+          showToast('🏆 ALL WORD SEARCH LEVELS COMPLETED! 🏆', 'gold');
+        }
+        document.getElementById('wordHint').textContent = '🎉 Complete!';
+      }
+    }
+  }
+
+  function clearWordSelection() {
+    wordState.selectedCells = [];
+    renderWordGrid();
+    updateWordHint();
+    showToast('🧹 Cleared', 'info');
+  }
+
+  function newWordSearch() {
+    if (window._wordDragCleanup) window._wordDragCleanup();
+    loadWordSearch(document.getElementById('gameContent'));
+  }
+
+  function updateWordFound() {
+    const el = document.getElementById('wordFoundCount');
+    if (el) el.textContent = `${wordState.foundWords.length}/${wordState.puzzle.words.length}`;
+  }
+
+  function wordUseHint() {
+    if (wordTimedMode && wordSeconds >= wordTimeLimit) {
+      showToast('⏰ Time is up!', 'warning');
+      return;
+    }
+    let used = parseInt(localStorage.getItem('wordHintsUsed_' + wordState.levelId) || '0');
+    if (used >= 3) {
+      showToast('⚠️ No hints left!', 'warning');
+      return;
+    }
+    const unfound = wordState.puzzle.words.filter(w => !wordState.foundWords.some(f => f.word === w));
+    if (unfound.length === 0) {
+      showToast('🎉 All found!', 'success');
+      return;
+    }
+    const target = unfound[0];
+    const size = wordState.gridSize;
+    const dirs = [[0, 1], [1, 0], [1, 1], [1, -1], [0, -1], [-1, 0], [-1, -1], [-1, 1]];
+    
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        for (const [dr, dc] of dirs) {
+          let match = true;
+          const cells = [];
+          for (let i = 0; i < target.length; i++) {
+            const nr = r + dr * i;
+            const nc = c + dc * i;
+            if (nr < 0 || nr >= size || nc < 0 || nc >= size || wordState.grid[nr][nc] !== target[i]) {
+              match = false;
+              break;
+            }
+            cells.push([nr, nc]);
+          }
+          if (match) {
+            used++;
+            localStorage.setItem('wordHintsUsed_' + wordState.levelId, String(used));
+            updateWordHintDisplay();
+            
+            const gridCells = document.querySelectorAll('#wordGrid .cell');
+            cells.forEach(([cr, cc]) => {
+              const idx = cr * size + cc;
+              if (gridCells[idx]) {
+                gridCells[idx].classList.add('highlight-hint');
+                setTimeout(() => gridCells[idx].classList.remove('highlight-hint'), 1800);
+              }
+            });
+            
+            document.querySelectorAll('.word-item').forEach(item => {
+              if (item.dataset.word === target) {
+                item.classList.add('highlight');
+                setTimeout(() => item.classList.remove('highlight'), 1800);
+              }
+            });
+            
+            document.getElementById('wordHint').textContent = `💡 Look for: ${target}`;
+            showToast(`💡 ${target} (${3 - used} left)`, 'info');
+            return;
+          }
+        }
+      }
+    }
+    showToast('⚠️ Try "New"', 'error');
+  }
+
+  // ============================================================
+  // MINESWEEPER
+  // ============================================================
+  const minesLevels = [
+    { id: 'beginner', label: '🌱 Beginner', rows: 9,  cols: 9,  mines: 10, timeLimit: 0 },
+    { id: 'intermediate', label: '⚡ Intermediate', rows: 12, cols: 12, mines: 22, timeLimit: 0 },
+    { id: 'expert', label: '🔥 Expert', rows: 16, cols: 16, mines: 40, timeLimit: 0 },
+    { id: 'timed', label: '⏱️ Timed 2min', rows: 9,  cols: 9,  mines: 10, timeLimit: 120 }
+  ];
+
+  let minesState = {
+    rows: 9,
+    cols: 9,
+    mineCount: 10,
+    grid: [],           // { mine: bool, revealed: bool, flagged: bool, adjacent: number }
+    gameOver: false,
+    won: false,
+    firstClickDone: false,
+    flagsPlaced: 0,
+    levelId: 'beginner'
+  };
+
+  function loadMinesweeper(container) {
+    const lvl = minesLevels.find(l => l.id === minesState.levelId) || minesLevels[0];
+    minesState.rows = lvl.rows;
+    minesState.cols = lvl.cols;
+    minesState.mineCount = lvl.mines;
+    minesState.gameOver = false;
+    minesState.won = false;
+    minesState.firstClickDone = false;
+    minesState.flagsPlaced = 0;
+    minesSolvedFlag = false;
+    minesTimedMode = lvl.timeLimit > 0;
+    minesTimeLimit = lvl.timeLimit;
+
+    if (minesTimerInterval) clearInterval(minesTimerInterval);
+    minesSeconds = 0;
+
+    // Build empty grid (mines placed lazily on first click)
+    minesState.grid = [];
+    for (let r = 0; r < minesState.rows; r++) {
+      const row = [];
+      for (let c = 0; c < minesState.cols; c++) {
+        row.push({ mine: false, revealed: false, flagged: false, adjacent: 0 });
+      }
+      minesState.grid.push(row);
+    }
+
+    const completed = getCompletedLevels('minesweeper');
+    const allCompleted = completed.length === minesLevels.length;
+
+    container.innerHTML = `
+      <div class="mines-wrapper">
+        <div class="level-selector">
+          ${minesLevels.map(l => {
+            const isActive = l.id === minesState.levelId;
+            const isCompleted = completed.includes(l.id);
+            const unlocked = isLevelUnlocked('minesweeper', l.id, minesLevels);
+            const timedClass = l.timeLimit > 0 ? 'timed' : '';
+            const completedClass = isCompleted ? 'completed' : '';
+            const lockedClass = !unlocked ? 'locked' : '';
+            return `<button class="level-btn ${isActive ? 'active' : ''} ${timedClass} ${completedClass} ${lockedClass}" 
+                    onclick="${unlocked ? `setMinesLevel('${l.id}')` : ''}"
+                    ${!unlocked ? 'disabled' : ''}>
+              ${l.label}${isCompleted ? ' ✓' : ''}
+            </button>`;
+          }).join('')}
+        </div>
+        ${allCompleted ? `<div style="color:#fbbf24;font-size:clamp(10px,1.2vh,12px);font-weight:600;padding:2px;">🏆 ALL LEVELS COMPLETED! 🏆</div>` : ''}
+        <div class="mines-status">
+          <span>💣 <span class="value" id="minesMineCount">${minesState.mineCount}</span></span>
+          <span>🚩 <span class="value" id="minesFlagsPlaced">0</span></span>
+          <span>⏱️ <span class="value ${minesTimedMode ? 'timed-warning' : ''}" id="minesTimer">00:00</span></span>
+          <span>⏳ <span class="value ${minesTimedMode ? 'timed-warning' : ''}" id="minesTimeLimit">${minesTimedMode ? '2:00' : '--'}</span></span>
+        </div>
+        <div class="mines-board" id="minesBoard" style="grid-template-columns: repeat(${minesState.cols}, 1fr); grid-template-rows: repeat(${minesState.rows}, 1fr);"></div>
+        <div class="game-buttons">
+          <button class="btn btn-secondary" onclick="newMinesweeper()">🔄 New</button>
+        </div>
+      </div>
+    `;
+    renderMinesBoard();
+    updateMinesTimerDisplay();
+    minesTimerInterval = setInterval(() => {
+      if (minesState.gameOver) return;
+      minesSeconds++;
+      updateMinesTimerDisplay();
+      if (minesTimedMode && minesTimeLimit > 0 && minesSeconds >= minesTimeLimit) {
+        showToast('⏰ Time is up! Try again.', 'warning');
+        minesState.gameOver = true;
+        clearInterval(minesTimerInterval);
+        revealAllMines();
+      }
+    }, 1000);
+  }
+
+  function setMinesLevel(id) {
+    minesState.levelId = id;
+    loadMinesweeper(document.getElementById('gameContent'));
+  }
+
+  function updateMinesTimerDisplay() {
+    const m = String(Math.floor(minesSeconds / 60)).padStart(2, '0');
+    const s = String(minesSeconds % 60).padStart(2, '0');
+    const el = document.getElementById('minesTimer');
+    if (el) el.textContent = `${m}:${s}`;
+    const limitEl = document.getElementById('minesTimeLimit');
+    if (limitEl) {
+      if (minesTimedMode && minesTimeLimit > 0) {
+        const remain = Math.max(0, minesTimeLimit - minesSeconds);
+        const rm = String(Math.floor(remain / 60)).padStart(2, '0');
+        const rs = String(remain % 60).padStart(2, '0');
+        limitEl.textContent = `${rm}:${rs}`;
+      } else {
+        limitEl.textContent = '--';
+      }
+    }
+  }
+
+  function renderMinesBoard() {
+    const boardEl = document.getElementById('minesBoard');
+    if (!boardEl) return;
+    boardEl.innerHTML = '';
+    const { rows, cols, grid } = minesState;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cellEl = document.createElement('div');
+        cellEl.className = 'cell';
+        cellEl.dataset.row = r;
+        cellEl.dataset.col = c;
+        const cell = grid[r][c];
+
+        if (cell.revealed) {
+          cellEl.classList.add('revealed');
+          if (cell.mine) {
+            cellEl.classList.add('mine');
+            cellEl.textContent = '💣';
+          } else if (cell.adjacent > 0) {
+            cellEl.textContent = cell.adjacent;
+            cellEl.classList.add('n' + cell.adjacent);
+          }
+        } else if (cell.flagged) {
+          cellEl.classList.add('flagged');
+          cellEl.textContent = '🚩';
+        }
+
+        // ─── Interactions ───
+        let touchTimer = null;
+        let longPressFired = false;
+
+        // Desktop right-click → flag
+        cellEl.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          toggleFlag(r, c);
+        });
+
+        // Tap / left-click → reveal
+        cellEl.addEventListener('click', (e) => {
+          if (longPressFired) {
+            longPressFired = false;
+            return;
+          }
+          revealCell(r, c);
+        });
+
+        // Touch long-press → flag
+        cellEl.addEventListener('touchstart', (e) => {
+          longPressFired = false;
+          touchTimer = setTimeout(() => {
+            longPressFired = true;
+            toggleFlag(r, c);
+            if (navigator.vibrate) navigator.vibrate(30);
+          }, 500);
+        }, { passive: true });
+
+        cellEl.addEventListener('touchend', () => {
+          if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
+          }
+        }, { passive: true });
+
+        cellEl.addEventListener('touchmove', () => {
+          if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
+          }
+        }, { passive: true });
+
+        boardEl.appendChild(cellEl);
+      }
+    }
+  }
+
+  function toggleFlag(r, c) {
+    if (minesState.gameOver) return;
+    if (!minesState.firstClickDone) {
+      showToast('👆 Tap a cell first', 'info');
+      return;
+    }
+    const cell = minesState.grid[r][c];
+    if (cell.revealed) return;
+
+    cell.flagged = !cell.flagged;
+    minesState.flagsPlaced += cell.flagged ? 1 : -1;
+
+    const flagsEl = document.getElementById('minesFlagsPlaced');
+    if (flagsEl) flagsEl.textContent = minesState.flagsPlaced;
+
+    renderMinesBoard();
+    checkMinesWin();
+  }
+
+  function revealCell(r, c) {
+    if (minesState.gameOver) return;
+    const cell = minesState.grid[r][c];
+    if (cell.revealed || cell.flagged) return;
+
+    // First-click safety: mines placed after first click, never on the clicked cell
+    if (!minesState.firstClickDone) {
+      placeMines(r, c);
+      minesState.firstClickDone = true;
+    }
+
+    if (cell.mine) {
+      minesState.gameOver = true;
+      clearInterval(minesTimerInterval);
+      revealAllMines();
+      const cellEls = document.querySelectorAll('#minesBoard .cell');
+      const idx = r * minesState.cols + c;
+      if (cellEls[idx]) cellEls[idx].classList.add('exploded');
+      showToast('💥 Boom! Game over', 'error');
+      return;
+    }
+
+    // Flood-fill reveal
+    const stack = [[r, c]];
+    while (stack.length) {
+      const [cr, cc] = stack.pop();
+      const cur = minesState.grid[cr][cc];
+      if (cur.revealed || cur.flagged) continue;
+      cur.revealed = true;
+      if (cur.adjacent === 0 && !cur.mine) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = cr + dr, nc = cc + dc;
+            if (nr >= 0 && nr < minesState.rows && nc >= 0 && nc < minesState.cols) {
+              const neighbor = minesState.grid[nr][nc];
+              if (!neighbor.revealed && !neighbor.flagged && !neighbor.mine) {
+                stack.push([nr, nc]);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    renderMinesBoard();
+    checkMinesWin();
+  }
+
+  function placeMines(safeR, safeC) {
+    const { rows, cols, mineCount } = minesState;
+    const positions = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        // Exclude 3x3 area around the first click
+        const nearSafe = Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1;
+        if (!nearSafe) positions.push([r, c]);
+      }
+    }
+    // Shuffle
+    for (let i = positions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    const minePositions = positions.slice(0, mineCount);
+    minePositions.forEach(([r, c]) => {
+      minesState.grid[r][c].mine = true;
+    });
+
+    // Compute adjacency
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              if (minesState.grid[nr][nc].mine) count++;
+            }
+          }
+        }
+        minesState.grid[r][c].adjacent = count;
+      }
+    }
+  }
+
+  function revealAllMines() {
+    for (let r = 0; r < minesState.rows; r++) {
+      for (let c = 0; c < minesState.cols; c++) {
+        if (minesState.grid[r][c].mine) {
+          minesState.grid[r][c].revealed = true;
+        }
+      }
+    }
+    renderMinesBoard();
+  }
+
+  function checkMinesWin() {
+    if (minesState.gameOver) return;
+    const { rows, cols } = minesState;
+    let revealedSafe = 0;
+    const totalSafe = rows * cols - minesState.mineCount;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (minesState.grid[r][c].revealed && !minesState.grid[r][c].mine) revealedSafe++;
+      }
+    }
+    if (revealedSafe === totalSafe) {
+      minesState.gameOver = true;
+      minesState.won = true;
+      clearInterval(minesTimerInterval);
+      if (!minesSolvedFlag) {
+        minesSolvedFlag = true;
+        showToast('🎉 You win!', 'success');
+        markLevelCompleted('minesweeper', minesState.levelId);
+        if (getCompletedLevels('minesweeper').length === minesLevels.length) {
+          showToast('🏆 ALL LEVELS COMPLETED! 🏆', 'gold');
+        }
+      }
+    }
+  }
+
+  function newMinesweeper() {
+    loadMinesweeper(document.getElementById('gameContent'));
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  updateProgressBadges();
+
+  window.openGame = openGame;
+  window.closeGame = closeGame;
+  window.setSudokuLevel = setSudokuLevel;
+  window.sudokuInput = sudokuInput;
+  window.newSudoku = newSudoku;
+  window.sudokuUseHint = sudokuUseHint;
+  window.checkSudoku = checkSudoku;
+  window.setWordLevel = setWordLevel;
+  window.newWordSearch = newWordSearch;
+  window.wordUseHint = wordUseHint;
+  window.clearWordSelection = clearWordSelection;
+  window.setMinesLevel = setMinesLevel;
+  window.newMinesweeper = newMinesweeper;
+</script>
+
+<script src="js/sidebar.js"></script>
+</body>
+</html>

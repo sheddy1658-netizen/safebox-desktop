@@ -1,0 +1,33 @@
+{
+  "name": "safebox-desktop",
+  "version": "1.0.0",
+  "description": "SafeBox Desktop Application",
+  "author": "SafeBox",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win nsis",
+    "build:linux": "electron-builder --linux AppImage",
+    "build:all": "electron-builder --win nsis --linux AppImage"
+  },
+  "build": {
+    "appId": "com.safebox.desktop",
+    "productName": "SafeBox",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility",
+      "icon": "icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0"
+  }
+}

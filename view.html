@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>📄 SafeView - PDF Annotation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%; overflow: hidden; background: #0a0a1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #fff; position: fixed; width: 100%; height: 100%;
+        }
+
+        /* ============ SIDEBAR ============ */
+        .sidebar-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.25s, visibility 0.25s;
+            z-index: 998;
+        }
+        .sidebar-overlay.open { opacity: 1; visibility: visible; }
+
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 260px; max-width: 82vw;
+            height: 100%;
+            background: #12122a;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            transform: translateX(-100%);
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999;
+            display: flex; flex-direction: column;
+            padding: 18px 0;
+            overflow-y: auto;
+        }
+        .sidebar.open { transform: translateX(0); }
+
+        .sidebar-header {
+            padding: 0 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 12px;
+        }
+        .sidebar-header h2 {
+            font-size: 17px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar-header .accent { color: #667eea; }
+        .sidebar-header .user {
+            font-size: 11px; color: rgba(255,255,255,0.4);
+            margin-top: 4px;
+        }
+
+        .sidebar-nav { list-style: none; padding: 0 10px; flex: 1; }
+        .sidebar-nav li { margin-bottom: 2px; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 14px; font-weight: 500;
+            transition: 0.15s;
+        }
+        .sidebar-nav a:hover {
+            background: rgba(255,255,255,0.06);
+            color: white;
+        }
+        .sidebar-nav a.active {
+            background: rgba(102,126,234,0.15);
+            color: #a5b4fc;
+        }
+        .sidebar-nav a .icon { font-size: 18px; width: 22px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 12px 20px 0;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .sidebar-footer button {
+            width: 100%;
+            padding: 10px;
+            background: rgba(220,53,69,0.12);
+            border: 1px solid rgba(220,53,69,0.25);
+            color: #f87171;
+            border-radius: 8px;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .sidebar-footer button:hover {
+            background: rgba(220,53,69,0.2);
+        }
+
+        /* ============ HEADER ============ */
+        .safe-header {
+            background: rgba(16, 16, 36, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 6px 12px;
+            display: flex; justify-content: flex-start; align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            flex-shrink: 0; z-index: 100;
+            min-height: 44px; position: relative;
+        }
+        .safe-header h1 {
+            font-size: 15px; display: flex; align-items: center; gap: 6px;
+        }
+        .safe-header h1 span { font-size: 17px; }
+        .safe-header .accent { color: #667eea; }
+        .header-btn {
+            color: #a0aec0; text-decoration: none;
+            padding: 4px 10px; border-radius: 6px;
+            background: rgba(255,255,255,0.06);
+            font-size: 12px; transition: 0.2s;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.12); color: white; }
+
+        .menu-toggle {
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.06);
+            border: none; border-radius: 6px;
+            color: #a0aec0; font-size: 18px;
+            width: 34px; height: 34px;
+            cursor: pointer; transition: 0.2s;
+            padding: 0; line-height: 1;
+        }
+        .menu-toggle:hover { background: rgba(255,255,255,0.12); color: white; }
+
+        /* ============ VIEWER ============ */
+        .viewer-container {
+            display: flex; flex-direction: column;
+            height: calc(100vh - 44px);
+            background: #0a0a1a; padding: 4px;
+            position: relative; overflow: hidden;
+        }
+        .file-info {
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px; padding: 4px 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0; border: 1px solid rgba(255,255,255,0.04);
+            min-height: 30px; flex-wrap: wrap; gap: 4px;
+        }
+        .file-info .name {
+            font-size: 12px; font-weight: 500;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; max-width: 200px;
+        }
+        .file-info .meta {
+            display: flex; gap: 8px;
+            font-size: 10px; color: rgba(255,255,255,0.4);
+        }
+        .file-info .meta strong { color: rgba(255,255,255,0.6); }
+
+        .pdf-toolbar {
+            display: flex; align-items: center; gap: 4px;
+            padding: 3px 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px; flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.04);
+            margin: 3px 0; flex-wrap: wrap; min-height: 32px;
+        }
+        .pdf-toolbar button {
+            background: rgba(255,255,255,0.06); border: none;
+            border-radius: 4px; padding: 2px 8px;
+            color: rgba(255,255,255,0.7); cursor: pointer;
+            font-size: 11px; transition: 0.15s;
+            min-width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pdf-toolbar button:hover { background: rgba(255,255,255,0.12); color: white; }
+        .pdf-toolbar button:disabled { opacity: 0.25; cursor: not-allowed; }
+        .pdf-toolbar .btn-primary { background: #667eea; color: white; }
+        .pdf-toolbar .btn-primary:hover { background: #5a6fd6; }
+        .pdf-toolbar .btn-success { background: #28a745; color: white; }
+        .pdf-toolbar .btn-success:hover { background: #218838; }
+        .pdf-toolbar .btn-danger { background: #dc3545; color: white; }
+        .pdf-toolbar .btn-danger:hover { background: #c82333; }
+        .pdf-toolbar .btn-warning { background: #ffc107; color: #333; }
+        .pdf-toolbar .btn-warning:hover { background: #e0a800; }
+        .pdf-toolbar .page-info {
+            font-size: 11px; color: rgba(255,255,255,0.6);
+            min-width: 50px; text-align: center;
+        }
+        .pdf-toolbar .zoom-info {
+            font-size: 10px; color: rgba(255,255,255,0.3);
+            min-width: 30px; text-align: center;
+        }
+        .pdf-toolbar .divider {
+            width: 1px; height: 16px; background: rgba(255,255,255,0.06);
+        }
+        .pdf-toolbar .annotation-tools {
+            display: flex; gap: 4px; align-items: center;
+            padding: 0 4px;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+        .pdf-toolbar .annotation-tools .active { background: #667eea; color: white; }
+
+        .media-container {
+            flex: 1; background: #0a0a1a; border-radius: 6px;
+            overflow: hidden; border: 1px solid rgba(255,255,255,0.04);
+            position: relative; display: flex;
+            align-items: center; justify-content: center;
+            min-height: 100px; width: 100%; height: 100%;
+        }
+        .pdf-scroll-wrapper {
+            width: 100%; height: 100%; overflow: auto;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 8px; -webkit-overflow-scrolling: touch; position: relative;
+        }
+        .pdf-scroll-wrapper::-webkit-scrollbar { width: 4px; height: 4px; }
+        .pdf-scroll-wrapper::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        .pdf-scroll-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+        .pdf-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        .canvas-wrapper {
+            position: relative; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            width: 100%; min-height: 100%;
+        }
+        .canvas-wrapper canvas {
+            background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            border-radius: 4px; display: block; max-width: 100%;
+            height: auto !important; position: relative; z-index: 1;
+        }
+
+        /* ===== ANNOTATION OVERLAY ===== */
+        .annotation-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+        }
+        .annotation-overlay.active { pointer-events: auto; cursor: text; }
+        .annotation-text {
+            position: absolute; background: rgba(255,255,0,0.3);
+            border: 2px solid #ffc107; border-radius: 4px;
+            padding: 4px 8px; font-size: 14px; color: #333;
+            cursor: move; min-width: 20px; min-height: 20px;
+            pointer-events: auto; user-select: none;
+            word-break: break-word; max-width: 300px;
+            transition: border-color 0.2s;
+        }
+        .annotation-text:hover { border-color: #ff9800; }
+        .annotation-text .annotation-delete {
+            position: absolute; top: -10px; right: -10px;
+            width: 20px; height: 20px; background: #dc3545;
+            color: white; border: none; border-radius: 50%;
+            font-size: 12px; cursor: pointer; display: none;
+            line-height: 20px; text-align: center; pointer-events: auto;
+        }
+        .annotation-text:hover .annotation-delete { display: block; }
+        .annotation-text .annotation-edit {
+            position: absolute; top: -10px; left: -10px;
+            width: 20px; height: 20px; background: #28a745;
+            color: white; border: none; border-radius: 50%;
+            font-size: 12px; cursor: pointer; display: none;
+            line-height: 20px; text-align: center; pointer-events: auto;
+        }
+        .annotation-text:hover .annotation-edit { display: block; }
+        .annotation-text.editing {
+            border-color: #28a745; background: rgba(40,167,69,0.2); outline: none;
+        }
+
+        /* ===== LOADING & ERROR ===== */
+        .loading-overlay, .error-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: rgba(10,10,26,0.9); z-index: 20;
+            backdrop-filter: blur(8px);
+        }
+        .loading-overlay .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.06);
+            border-top-color: #667eea; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay p, .error-overlay p {
+            font-size: 13px; color: rgba(255,255,255,0.4);
+        }
+        .error-overlay .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+        .error-overlay h3 { font-size: 16px; margin-bottom: 4px; color: #dc3545; }
+        .error-overlay .btn { margin-top: 12px; }
+
+        .btn {
+            padding: 6px 14px; border: none; border-radius: 6px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            transition: 0.2s; text-decoration: none; display: inline-block;
+        }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+
+        /* ============================================
+           AUTO-ROTATE + FULLSCREEN ENHANCEMENTS
+           ============================================ */
+
+        /* Landscape tweaks — reclaim vertical space when rotated */
+        @media (orientation: landscape) {
+            .safe-header {
+                min-height: 32px !important;
+                padding: 2px 10px !important;
+            }
+            .safe-header h1 { font-size: 12px !important; }
+            .header-btn { padding: 2px 8px !important; font-size: 11px !important; }
+
+            .viewer-container {
+                height: calc(100vh - 32px) !important;
+                padding: 2px !important;
+            }
+            .file-info {
+                min-height: 22px !important;
+                padding: 2px 8px !important;
+            }
+            .file-info .name { font-size: 11px; max-width: 160px; }
+
+            .pdf-toolbar {
+                min-height: 26px !important;
+                padding: 2px 6px !important;
+                margin: 2px 0 !important;
+            }
+            .pdf-toolbar button {
+                height: 20px !important;
+                min-width: 20px !important;
+                font-size: 10px !important;
+                padding: 1px 6px !important;
+            }
+
+            .pdf-scroll-wrapper { padding: 4px !important; }
+        }
+
+        body.rotated-landscape .safe-header {
+            min-height: 32px;
+            padding: 2px 10px;
+        }
+        body.rotated-landscape .viewer-container {
+            height: calc(100vh - 32px);
+        }
+
+        /* Fullscreen: hide header/meta and give PDF every pixel */
+        body.is-fullscreen .safe-header {
+            display: none !important;
+        }
+        body.is-fullscreen .viewer-container {
+            height: 100vh !important;
+            padding: 0 !important;
+        }
+        body.is-fullscreen .file-info {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.55) !important;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 3px 12px !important;
+            border-radius: 20px !important;
+            max-width: 92vw;
+            pointer-events: none;
+            opacity: 0.85;
+            transition: opacity 0.3s;
+        }
+        body.is-fullscreen .file-info .name { font-size: 11px; }
+        body.is-fullscreen .pdf-toolbar {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            background: rgba(16, 16, 36, 0.92) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 4px 10px !important;
+            border-radius: 26px !important;
+            margin: 0 !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            max-width: 95vw;
+        }
+        body.is-fullscreen .media-container {
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        body.is-fullscreen .pdf-scroll-wrapper {
+            padding: 0 !important;
+        }
+
+        /* Rotate button visual state */
+        #rotateBtn.active {
+            background: #667eea !important;
+            color: #fff !important;
+        }
+
+        /* Fullscreen button visual state */
+        #fullscreenBtn.active {
+            background: #667eea !important;
+            color: #fff !important;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .safe-header { padding: 4px 10px; min-height: 38px; }
+            .safe-header h1 { font-size: 13px; }
+            .header-btn { font-size: 11px; padding: 3px 8px; }
+            .menu-toggle { width: 30px; height: 30px; font-size: 16px; }
+            .viewer-container { padding: 3px; height: calc(100vh - 38px); }
+            .file-info .name { font-size: 11px; max-width: 120px; }
+            .file-info .meta { font-size: 9px; gap: 4px; }
+            .pdf-toolbar { padding: 2px 6px; gap: 2px; min-height: 28px; }
+            .pdf-toolbar button { font-size: 10px; padding: 2px 6px; height: 20px; min-width: 18px; }
+            .pdf-toolbar .page-info { font-size: 10px; min-width: 40px; }
+            .pdf-scroll-wrapper { padding: 4px; }
+        }
+        @media (max-width: 480px) {
+            .safe-header h1 { font-size: 11px; }
+            .file-info .name { font-size: 10px; max-width: 80px; }
+            .file-info .meta { font-size: 8px; gap: 3px; }
+            .pdf-toolbar button { font-size: 9px; padding: 2px 4px; height: 18px; min-width: 16px; }
+            .pdf-toolbar .page-info { font-size: 9px; min-width: 35px; }
+            .pdf-toolbar .zoom-info { font-size: 9px; min-width: 25px; }
+        }
+        @media (max-height: 500px) and (orientation: landscape) {
+            .safe-header { min-height: 32px; padding: 2px 8px; }
+            .safe-header h1 { font-size: 12px; }
+            .menu-toggle { width: 26px; height: 26px; font-size: 14px; }
+            .viewer-container { height: calc(100vh - 32px); padding: 2px; }
+            .file-info { min-height: 24px; padding: 2px 8px; }
+            .file-info .name { font-size: 10px; max-width: 100px; }
+            .pdf-toolbar { min-height: 24px; padding: 2px 6px; margin: 2px 0; }
+            .pdf-toolbar button { height: 18px; font-size: 9px; padding: 1px 4px; min-width: 16px; }
+            .pdf-scroll-wrapper { padding: 2px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ============ SIDEBAR ============ -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>📦 <span class="accent">Safe</span>Box</h2>
+            <div class="user" id="sidebarUser">Signed in</div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html"><span class="icon">🏠</span> Dashboard</a></li>
+            <li><a href="files.html" class="active"><span class="icon">📁</span> My Files</a></li>
+            <li><a href="backup.html"><span class="icon">💾</span> Backup</a></li>
+            <li><a href="share.html"><span class="icon">📤</span> Share</a></li>
+            <li><a href="received.html"><span class="icon">📥</span> Received</a></li>
+            <li><a href="settings.html"><span class="icon">⚙️</span> Settings</a></li>
+            <li><a href="profile.html"><span class="icon">👤</span> Profile</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button onclick="handleLogout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <!-- ============ HEADER ============ -->
+    <header class="safe-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <a href="files.html" class="header-btn">✕ Close</a>
+            <h1><span>📄</span> <span class="accent">Safe</span>View</h1>
+        </div>
+    </header>
+
+    <div class="viewer-container" id="viewerContainer">
+        <div class="file-info">
+            <span class="name" id="fileName">Loading...</span>
+            <span class="meta">
+                <span><strong>Size:</strong> <span id="fileSize">-</span></span>
+                <span id="metaExtra"><strong>Type:</strong> <span id="fileType">-</span></span>
+                <span id="pageCountDisplay" style="display:none;"><strong>Pages:</strong> <span id="pageCount">-</span></span>
+                <span id="annotationCount" style="display:none;"><strong>Annotations:</strong> <span id="annoCount">0</span></span>
+            </span>
+        </div>
+
+        <div class="pdf-toolbar" id="pdfToolbar" style="display:none;">
+            <button onclick="prevPage()" id="prevBtn" disabled>◀</button>
+            <span class="page-info" id="pageInfo">- / -</span>
+            <button onclick="nextPage()" id="nextBtn" disabled>▶</button>
+            <span class="divider"></span>
+            <button onclick="zoomOut()">🔍−</button>
+            <span class="zoom-info" id="zoomInfo">100%</span>
+            <button onclick="zoomIn()">🔍+</button>
+            <span class="divider"></span>
+            <button onclick="fitPage()" class="btn-primary" title="Fit Page">📐</button>
+            <button onclick="fitWidth()" class="btn-primary" title="Fit Width">📏</button>
+            <span class="divider"></span>
+            <div class="annotation-tools">
+                <button onclick="toggleAnnotationMode()" id="annoBtn" title="Add Text Annotation" class="btn-warning">✏️</button>
+                <button onclick="clearAllAnnotations()" id="clearAnnoBtn" title="Clear All Annotations" class="btn-danger" style="display:none;">🗑️</button>
+            </div>
+            <span class="divider"></span>
+            <button onclick="toggleAutoRotate()" id="rotateBtn" title="Auto-rotate screen">🔄</button>
+            <button onclick="rotateOnce()" title="Rotate 90°">↻</button>
+            <span class="divider"></span>
+            <button onclick="downloadCurrentFile()" class="btn-success" title="Download">⬇️</button>
+            <button onclick="toggleFullScreen()" id="fullscreenBtn" class="btn-primary" title="Full Screen">⛶</button>
+        </div>
+
+        <div class="media-container" id="mediaContainer">
+            <div id="pdfContainer" style="display:none;width:100%;height:100%;position:relative;">
+                <div id="pdfLoading" class="loading-overlay" style="display:flex;">
+                    <div class="spinner"></div>
+                    <p>Loading PDF…</p>
+                </div>
+                <div class="pdf-scroll-wrapper" id="scrollWrapper" style="display:none;">
+                    <div class="canvas-wrapper" id="canvasWrapper">
+                        <canvas id="pdfCanvas"></canvas>
+                        <div class="annotation-overlay" id="annotationOverlay"></div>
+                    </div>
+                </div>
+                <div id="pdfError" class="error-overlay" style="display:none;">
+                    <span class="icon">❌</span>
+                    <h3>Failed to load PDF</h3>
+                    <p id="errorMessage">Unknown error</p>
+                    <button onclick="downloadCurrentFile()" class="btn btn-success">⬇️ Download</button>
+                </div>
+            </div>
+
+            <div id="mediaContentContainer" style="display:none;width:100%;height:100%;position:relative;">
+                <div id="mediaLoading" class="loading-overlay" style="display:flex;">
+                    <div class="spinner"></div>
+                    <p>Loading media…</p>
+                </div>
+                <div id="mediaContent" style="display:none;width:100%;height:100%;"></div>
+                <div id="mediaError" class="error-overlay" style="display:none;">
+                    <span class="icon">❌</span>
+                    <h3>Failed to load media</h3>
+                    <p id="mediaErrorMessage">Unsupported format</p>
+                    <button onclick="downloadCurrentFile()" class="btn btn-success">⬇️ Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/dialogs.js"></script>
+    <script>
+        // ============================================================
+        // SIDEBAR TOGGLE
+        // ============================================================
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const menuToggle = document.getElementById('menuToggle');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.add('open');
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+        }
+        function toggleSidebar() {
+            if (sidebar.classList.contains('open')) closeSidebar();
+            else openSidebar();
+        }
+
+        if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
+        });
+
+        try {
+            const u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+            if (u && u.username) {
+                document.getElementById('sidebarUser').textContent = '👤 ' + u.username;
+            }
+        } catch (e) {}
+
+        function handleLogout() {
+            if (typeof window.logoutUser === 'function') {
+                window.logoutUser();
+            } else {
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ============================================================
+        // PDF.JS CONFIG
+        // ============================================================
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let currentFile = null;
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.0;
+        let fitMode = 'page';
+        let canvas = null;
+        let ctx = null;
+        let pdfPageCount = 0;
+        let currentMediaType = null;
+
+        let annotations = {};
+        let annotationMode = false;
+
+        const pdfContainer = document.getElementById('pdfContainer');
+        const pdfLoading = document.getElementById('pdfLoading');
+        const scrollWrapper = document.getElementById('scrollWrapper');
+        const pdfError = document.getElementById('pdfError');
+        const errorMessage = document.getElementById('errorMessage');
+        const pdfToolbar = document.getElementById('pdfToolbar');
+        const pageInfo = document.getElementById('pageInfo');
+        const zoomInfo = document.getElementById('zoomInfo');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const mediaContentContainer = document.getElementById('mediaContentContainer');
+        const mediaLoading = document.getElementById('mediaLoading');
+        const mediaContent = document.getElementById('mediaContent');
+        const mediaError = document.getElementById('mediaError');
+        const mediaErrorMessage = document.getElementById('mediaErrorMessage');
+        const pageCountDisplay = document.getElementById('pageCountDisplay');
+        const pageCount = document.getElementById('pageCount');
+        const annotationOverlay = document.getElementById('annotationOverlay');
+        const annoBtn = document.getElementById('annoBtn');
+        const clearAnnoBtn = document.getElementById('clearAnnoBtn');
+        const annoCount = document.getElementById('annoCount');
+        const annotationCountDisplay = document.getElementById('annotationCount');
+
+        // ============================================================
+        // LOAD FILE
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            loadFile();
+        });
+
+        async function loadFile() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            if (!id) { showError('No file selected', true); return; }
+            try {
+                const file = await getFile(parseInt(id));
+                if (!file) { showError('File not found', true); return; }
+                currentFile = file;
+                document.getElementById('fileName').textContent = file.original_name;
+                document.getElementById('fileSize').textContent = formatSize(file.size);
+                document.getElementById('fileType').textContent = file.extension ? file.extension.toUpperCase() : 'Unknown';
+
+                const ext = file.extension ? file.extension.toLowerCase() : '';
+                const isPdf = ext === 'pdf' || (file.mime_type && file.mime_type === 'application/pdf');
+                const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].includes(ext);
+                const isVideo = ['mp4','webm','ogg','ogv','mov','m4v','avi','mkv','wmv','flv','3gp','mpeg','mpg'].includes(ext);
+                const isAudio = ['mp3','wav','ogg','flac','aac','wma','m4a','opus'].includes(ext);
+
+                if (isPdf) await renderPDF(file);
+                else if (isImage) renderImage(file);
+                else if (isVideo) renderVideo(file);
+                else if (isAudio) renderAudio(file);
+                else showUnsupported(file);
+            } catch (error) {
+                console.error('Load file error:', error);
+                showError(error.message, true);
+            }
+        }
+
+        // ============================================================
+        // RENDER PDF
+        // ============================================================
+        async function renderPDF(file) {
+            currentMediaType = 'pdf';
+            pdfContainer.style.display = 'block';
+            mediaContentContainer.style.display = 'none';
+            pdfLoading.style.display = 'flex';
+            scrollWrapper.style.display = 'none';
+            pdfError.style.display = 'none';
+            pdfToolbar.style.display = 'flex';
+            pageCountDisplay.style.display = 'inline';
+            annotationCountDisplay.style.display = 'inline';
+
+            await loadAnnotations(file.id);
+
+            try {
+                let blob = file.blob;
+                if (!blob || blob.size === 0) throw new Error('PDF file is empty');
+                if (blob.type !== 'application/pdf') {
+                    const ab = await blob.arrayBuffer();
+                    blob = new Blob([ab], { type: 'application/pdf' });
+                }
+                const url = URL.createObjectURL(blob);
+                const pdf = await pdfjsLib.getDocument(url).promise;
+                pdfDoc = pdf;
+                pdfPageCount = pdf.numPages;
+                pageCount.textContent = pdfPageCount;
+
+                pdfLoading.style.display = 'none';
+                scrollWrapper.style.display = 'flex';
+                pdfError.style.display = 'none';
+
+                canvas = document.getElementById('pdfCanvas');
+                ctx = canvas.getContext('2d');
+
+                fitMode = 'page';
+                await renderPage(1);
+                updatePageInfo();
+                updateAnnotationCount();
+            } catch (err) {
+                console.error('PDF render error:', err);
+                pdfLoading.style.display = 'none';
+                pdfError.style.display = 'flex';
+                errorMessage.textContent = err.message || 'PDF load error';
+                pdfToolbar.style.display = 'none';
+            }
+        }
+
+        async function renderPage(num) {
+            if (!pdfDoc || !canvas || !ctx) return;
+            if (pageRendering) { pageNumPending = num; return; }
+            pageRendering = true;
+            try {
+                const page = await pdfDoc.getPage(num);
+                pageNum = num;
+                const wrapper = document.getElementById('scrollWrapper');
+                const rect = wrapper.getBoundingClientRect();
+                const wrapperWidth = rect.width - 16;
+                const wrapperHeight = rect.height - 16;
+                const viewport = page.getViewport({ scale: 1 });
+
+                let fitScale;
+                if (fitMode === 'page') {
+                    fitScale = Math.min(wrapperWidth / viewport.width, wrapperHeight / viewport.height, 2.0);
+                } else if (fitMode === 'width') {
+                    fitScale = Math.min(wrapperWidth / viewport.width, 2.0);
+                } else {
+                    fitScale = scale;
+                }
+                fitScale = Math.max(0.1, Math.min(fitScale, 4.0));
+                scale = fitScale;
+
+                const scaledViewport = page.getViewport({ scale: fitScale });
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+                canvas.style.width = scaledViewport.width + 'px';
+                canvas.style.height = scaledViewport.height + 'px';
+
+                await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+                updatePageInfo();
+                renderAnnotations();
+            } catch (e) {
+                console.error('Page render error:', e);
+            } finally {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    const pending = pageNumPending;
+                    pageNumPending = null;
+                    await renderPage(pending);
+                }
+            }
+        }
+
+        function updatePageInfo() {
+            if (!pdfDoc) return;
+            pageInfo.textContent = `${pageNum} / ${pdfPageCount}`;
+            zoomInfo.textContent = Math.round(scale * 100) + '%';
+            prevBtn.disabled = pageNum <= 1;
+            nextBtn.disabled = pageNum >= pdfPageCount;
+        }
+
+        // ============================================================
+        // ANNOTATIONS
+        // ============================================================
+        async function loadAnnotations(fileId) {
+            const key = `annotations_${fileId}`;
+            try {
+                const stored = localStorage.getItem(key);
+                annotations = stored ? JSON.parse(stored) : {};
+            } catch (e) { annotations = {}; }
+            if (!annotations[fileId]) annotations[fileId] = {};
+        }
+
+        function saveAnnotations() {
+            localStorage.setItem(`annotations_${currentFile.id}`, JSON.stringify(annotations));
+            updateAnnotationCount();
+        }
+
+        function updateAnnotationCount() {
+            const count = getCurrentPageAnnotations().length;
+            annoCount.textContent = count;
+            clearAnnoBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+
+        function getCurrentPageAnnotations() {
+            if (!currentFile) return [];
+            return annotations[`${currentFile.id}_${pageNum}`] || [];
+        }
+
+        function renderAnnotations() {
+            const overlay = document.getElementById('annotationOverlay');
+            overlay.innerHTML = '';
+            overlay.style.width = canvas.width + 'px';
+            overlay.style.height = canvas.height + 'px';
+
+            const pageAnno = getCurrentPageAnnotations();
+            pageAnno.forEach((anno, index) => {
+                const el = document.createElement('div');
+                el.className = 'annotation-text';
+                el.textContent = anno.text;
+                el.style.left = anno.x + 'px';
+                el.style.top = anno.y + 'px';
+                el.style.fontSize = (anno.fontSize || 14) + 'px';
+                el.style.color = anno.color || '#333';
+                el.dataset.index = index;
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'annotation-delete';
+                delBtn.textContent = '×';
+                delBtn.onclick = function(e) { e.stopPropagation(); deleteAnnotation(index); };
+                el.appendChild(delBtn);
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'annotation-edit';
+                editBtn.textContent = '✎';
+                editBtn.onclick = function(e) { e.stopPropagation(); editAnnotation(index); };
+                el.appendChild(editBtn);
+
+                let isDragging = false, startX, startY, origX, origY;
+                el.addEventListener('mousedown', function(e) {
+                    if (e.target === delBtn || e.target === editBtn) return;
+                    isDragging = true;
+                    startX = e.clientX; startY = e.clientY;
+                    origX = parseFloat(el.style.left);
+                    origY = parseFloat(el.style.top);
+                    el.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    el.style.left = Math.max(0, origX + (e.clientX - startX)) + 'px';
+                    el.style.top = Math.max(0, origY + (e.clientY - startY)) + 'px';
+                });
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        el.style.cursor = 'move';
+                        const pageKey = `${currentFile.id}_${pageNum}`;
+                        const i = parseInt(el.dataset.index);
+                        if (annotations[pageKey] && annotations[pageKey][i]) {
+                            annotations[pageKey][i].x = parseFloat(el.style.left);
+                            annotations[pageKey][i].y = parseFloat(el.style.top);
+                            saveAnnotations();
+                        }
+                    }
+                });
+
+                let touchStartX, touchStartY, touchOrigX, touchOrigY;
+                el.addEventListener('touchstart', function(e) {
+                    if (e.target === delBtn || e.target === editBtn) return;
+                    const t = e.touches[0];
+                    touchStartX = t.clientX; touchStartY = t.clientY;
+                    touchOrigX = parseFloat(el.style.left);
+                    touchOrigY = parseFloat(el.style.top);
+                }, { passive: true });
+                el.addEventListener('touchmove', function(e) {
+                    const t = e.touches[0];
+                    el.style.left = Math.max(0, touchOrigX + (t.clientX - touchStartX)) + 'px';
+                    el.style.top = Math.max(0, touchOrigY + (t.clientY - touchStartY)) + 'px';
+                }, { passive: true });
+                el.addEventListener('touchend', function() {
+                    const pageKey = `${currentFile.id}_${pageNum}`;
+                    const i = parseInt(el.dataset.index);
+                    if (annotations[pageKey] && annotations[pageKey][i]) {
+                        annotations[pageKey][i].x = parseFloat(el.style.left);
+                        annotations[pageKey][i].y = parseFloat(el.style.top);
+                        saveAnnotations();
+                    }
+                }, { passive: true });
+
+                overlay.appendChild(el);
+            });
+
+            if (annotationMode) overlay.classList.add('active');
+            else overlay.classList.remove('active');
+        }
+
+        function toggleAnnotationMode() {
+            annotationMode = !annotationMode;
+            annoBtn.classList.toggle('active', annotationMode);
+            const overlay = document.getElementById('annotationOverlay');
+            if (annotationMode) {
+                overlay.classList.add('active');
+                overlay.style.cursor = 'text';
+                overlay.onclick = function(e) {
+                    if (!annotationMode) return;
+                    const rect = overlay.getBoundingClientRect();
+                    addAnnotation(e.clientX - rect.left, e.clientY - rect.top);
+                };
+            } else {
+                overlay.classList.remove('active');
+                overlay.style.cursor = 'default';
+                overlay.onclick = null;
+            }
+        }
+
+        function addAnnotation(x, y) {
+            const text = prompt('Enter annotation text:', '');
+            if (text === null || text.trim() === '') return;
+            const pageKey = `${currentFile.id}_${pageNum}`;
+            if (!annotations[pageKey]) annotations[pageKey] = [];
+            annotations[pageKey].push({
+                x: x - 10, y: y - 10, text: text.trim(),
+                fontSize: 14, color: '#333'
+            });
+            saveAnnotations();
+            renderAnnotations();
+            updateAnnotationCount();
+            if (annotationMode) toggleAnnotationMode();
+        }
+
+        function deleteAnnotation(index) {
+            const pageKey = `${currentFile.id}_${pageNum}`;
+            if (annotations[pageKey]) {
+                annotations[pageKey].splice(index, 1);
+                if (annotations[pageKey].length === 0) delete annotations[pageKey];
+                saveAnnotations();
+                renderAnnotations();
+                updateAnnotationCount();
+            }
+        }
+
+        function editAnnotation(index) {
+            const pageKey = `${currentFile.id}_${pageNum}`;
+            if (!annotations[pageKey] || !annotations[pageKey][index]) return;
+            const anno = annotations[pageKey][index];
+            const newText = prompt('Edit annotation text:', anno.text);
+            if (newText === null) return;
+            anno.text = newText.trim() || anno.text;
+            saveAnnotations();
+            renderAnnotations();
+        }
+
+        function clearAllAnnotations() {
+            if (!confirm('Delete all annotations on this page?')) return;
+            delete annotations[`${currentFile.id}_${pageNum}`];
+            saveAnnotations();
+            renderAnnotations();
+            updateAnnotationCount();
+        }
+
+        // ============================================================
+        // IMAGE / VIDEO / AUDIO
+        // ============================================================
+        function renderImage(file) {
+            currentMediaType = 'image';
+            pdfContainer.style.display = 'none';
+            mediaContentContainer.style.display = 'block';
+            mediaLoading.style.display = 'flex';
+            mediaContent.style.display = 'none';
+            mediaError.style.display = 'none';
+            pdfToolbar.style.display = 'none';
+            pageCountDisplay.style.display = 'none';
+            annotationCountDisplay.style.display = 'none';
+
+            try {
+                const blob = file.blob;
+                if (!blob || blob.size === 0) throw new Error('Image file is empty');
+                const url = URL.createObjectURL(blob);
+                mediaContent.innerHTML = '';
+                const container = document.createElement('div');
+                container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#0a0a1a;';
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = file.original_name;
+                img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;display:block;';
+                const controls = document.createElement('div');
+                controls.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(0,0,0,0.75);padding:6px 12px;border-radius:20px;backdrop-filter:blur(8px);z-index:10;border:1px solid rgba(255,255,255,0.1);';
+                controls.innerHTML = `
+                    <button onclick="rotateOnce()" style="background:rgba(255,255,255,0.1);border:none;border-radius:4px;padding:4px 10px;color:white;cursor:pointer;font-size:12px;">↻</button>
+                    <button onclick="toggleFullScreen()" style="background:rgba(255,255,255,0.1);border:none;border-radius:4px;padding:4px 10px;color:white;cursor:pointer;font-size:12px;">⛶</button>
+                    <button onclick="downloadCurrentFile()" style="background:#28a745;border:none;border-radius:4px;padding:4px 10px;color:white;cursor:pointer;font-size:12px;">⬇️</button>
+                `;
+                container.appendChild(img);
+                container.appendChild(controls);
+                mediaContent.appendChild(container);
+                mediaLoading.style.display = 'none';
+                mediaContent.style.display = 'block';
+            } catch (err) {
+                console.error('Image render error:', err);
+                mediaLoading.style.display = 'none';
+                mediaError.style.display = 'flex';
+                mediaErrorMessage.textContent = err.message || 'Image load error';
+            }
+        }
+
+        function renderVideo(file) {
+            currentMediaType = 'video';
+            pdfContainer.style.display = 'none';
+            mediaContentContainer.style.display = 'block';
+            mediaLoading.style.display = 'flex';
+            mediaContent.style.display = 'none';
+            mediaError.style.display = 'none';
+            pdfToolbar.style.display = 'none';
+            pageCountDisplay.style.display = 'none';
+            annotationCountDisplay.style.display = 'none';
+
+            try {
+                const blob = file.blob;
+                if (!blob || blob.size === 0) throw new Error('Video file is empty');
+                const url = URL.createObjectURL(blob);
+                mediaContent.innerHTML = '';
+                const container = document.createElement('div');
+                container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;background:#000;';
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.autoplay = false;
+                video.playsinline = true;
+                video.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;background:#000;';
+                container.appendChild(video);
+                mediaContent.appendChild(container);
+                mediaLoading.style.display = 'none';
+                mediaContent.style.display = 'block';
+            } catch (err) {
+                console.error('Video render error:', err);
+                mediaLoading.style.display = 'none';
+                mediaError.style.display = 'flex';
+                mediaErrorMessage.textContent = err.message || 'Video load error';
+            }
+        }
+
+        function renderAudio(file) {
+            currentMediaType = 'audio';
+            pdfContainer.style.display = 'none';
+            mediaContentContainer.style.display = 'block';
+            mediaLoading.style.display = 'flex';
+            mediaContent.style.display = 'none';
+            mediaError.style.display = 'none';
+            pdfToolbar.style.display = 'none';
+            pageCountDisplay.style.display = 'none';
+            annotationCountDisplay.style.display = 'none';
+
+            try {
+                const blob = file.blob;
+                if (!blob || blob.size === 0) throw new Error('Audio file is empty');
+                const url = URL.createObjectURL(blob);
+                mediaContent.innerHTML = '';
+                const container = document.createElement('div');
+                container.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;background:#0a0a1a;';
+                const icon = document.createElement('div');
+                icon.textContent = '🎵';
+                icon.style.cssText = 'font-size:64px;opacity:0.6;';
+                const name = document.createElement('h3');
+                name.textContent = file.original_name;
+                name.style.cssText = 'color:rgba(255,255,255,0.6);font-size:16px;';
+                const audio = document.createElement('audio');
+                audio.src = url;
+                audio.controls = true;
+                audio.style.cssText = 'width:90%;max-width:500px;background:#1a1a2e;border-radius:30px;padding:10px;';
+                container.appendChild(icon);
+                container.appendChild(name);
+                container.appendChild(audio);
+                mediaContent.appendChild(container);
+                mediaLoading.style.display = 'none';
+                mediaContent.style.display = 'block';
+            } catch (err) {
+                console.error('Audio render error:', err);
+                mediaLoading.style.display = 'none';
+                mediaError.style.display = 'flex';
+                mediaErrorMessage.textContent = err.message || 'Audio load error';
+            }
+        }
+
+        function showUnsupported(file) {
+            pdfContainer.style.display = 'none';
+            mediaContentContainer.style.display = 'block';
+            mediaLoading.style.display = 'none';
+            mediaContent.style.display = 'none';
+            mediaError.style.display = 'flex';
+            mediaErrorMessage.textContent = `File type "${file.extension || 'Unknown'}" cannot be previewed.`;
+            pdfToolbar.style.display = 'none';
+            pageCountDisplay.style.display = 'none';
+            annotationCountDisplay.style.display = 'none';
+        }
+
+        // ============================================================
+        // FULLSCREEN (enhanced — with orientation lock/unlock)
+        // ============================================================
+        async function toggleFullScreen() {
+            const btn = document.getElementById('fullscreenBtn');
+
+            if (!document.fullscreenElement) {
+                try {
+                    await document.documentElement.requestFullscreen();
+                    document.body.classList.add('is-fullscreen');
+                    if (btn) btn.classList.add('active');
+
+                    // Try to lock orientation based on current mode
+                    await lockOrientationIfPossible();
+                } catch (err) {
+                    console.log('Fullscreen error:', err);
+                    // Fallback for iOS Safari / older browsers
+                    if (document.documentElement.webkitRequestFullscreen) {
+                        document.documentElement.webkitRequestFullscreen();
+                        document.body.classList.add('is-fullscreen');
+                        if (btn) btn.classList.add('active');
+                    }
+                }
+            } else {
+                try {
+                    // Always unlock orientation before exiting fullscreen
+                    await unlockOrientationIfPossible();
+                    await document.exitFullscreen();
+                    document.body.classList.remove('is-fullscreen');
+                    if (btn) btn.classList.remove('active');
+                } catch (err) {
+                    if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                        document.body.classList.remove('is-fullscreen');
+                        if (btn) btn.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('fullscreenchange', function() {
+            const btn = document.getElementById('fullscreenBtn');
+            if (document.fullscreenElement) {
+                document.body.classList.add('is-fullscreen');
+                if (btn) btn.classList.add('active');
+            } else {
+                document.body.classList.remove('is-fullscreen');
+                if (btn) btn.classList.remove('active');
+            }
+            setTimeout(() => {
+                if (currentMediaType === 'pdf' && pdfDoc) renderPage(pageNum);
+            }, 350);
+        });
+
+        // ============================================================
+        // SCREEN AUTO-ROTATION
+        // ============================================================
+
+        // Rotation strategy:
+        //   1. If the browser supports Screen Orientation API → lock the orientation.
+        //   2. Otherwise → fall back to a CSS transform.
+        //      The wrapper is rotated and resized so the PDF fills the viewport.
+
+        let autoRotateEnabled = false;
+        let manualRotationDegrees = 0;   // 0, 90, 180, 270
+        let orientationListenerAttached = false;
+
+        const supportsScreenOrientationLock =
+            typeof screen !== 'undefined' &&
+            'orientation' in screen &&
+            screen.orientation &&
+            typeof screen.orientation.lock === 'function';
+
+        // ---- Public: toggle auto-rotate ----
+        async function toggleAutoRotate() {
+            autoRotateEnabled = !autoRotateEnabled;
+            const btn = document.getElementById('rotateBtn');
+            if (btn) btn.classList.toggle('active', autoRotateEnabled);
+
+            if (autoRotateEnabled) {
+                showToast('🔄 Auto-rotate ON — turn your device', 'success');
+
+                // Try native lock first (best UX)
+                if (supportsScreenOrientationLock) {
+                    await lockToCurrentPhysicalOrientation();
+                } else {
+                    // Fallback: apply CSS rotation based on current orientation
+                    applyAutoRotationByCSS();
+                    attachOrientationListener();
+                }
+            } else {
+                showToast('🔄 Auto-rotate OFF', 'info');
+
+                // Unlock native
+                if (supportsScreenOrientationLock) {
+                    await unlockOrientationIfPossible();
+                }
+
+                // Remove CSS rotation
+                detachOrientationListener();
+                clearCSSRotation();
+                manualRotationDegrees = 0;
+            }
+
+            // Re-render so the canvas fit calculation is correct
+            if (currentMediaType === 'pdf' && pdfDoc) {
+                setTimeout(() => renderPage(pageNum), 250);
+            }
+        }
+
+        // ---- Public: rotate 90° manually (works everywhere) ----
+        function rotateOnce() {
+            manualRotationDegrees = (manualRotationDegrees + 90) % 360;
+
+            // Manual rotation temporarily disables auto-rotate
+            if (autoRotateEnabled) {
+                autoRotateEnabled = false;
+                const btn = document.getElementById('rotateBtn');
+                if (btn) btn.classList.remove('active');
+                detachOrientationListener();
+                if (supportsScreenOrientationLock) {
+                    unlockOrientationIfPossible();
+                }
+            }
+
+            applyManualRotation(manualRotationDegrees);
+            showToast(`↻ Rotated ${manualRotationDegrees}°`, 'info');
+
+            if (currentMediaType === 'pdf' && pdfDoc) {
+                setTimeout(() => renderPage(pageNum), 250);
+            }
+        }
+
+        // ---- Native Screen Orientation API helpers ----
+        async function lockOrientationIfPossible() {
+            if (!supportsScreenOrientationLock) return false;
+            try {
+                // Prefer landscape when entering fullscreen for a document viewer
+                await screen.orientation.lock('landscape');
+                return true;
+            } catch (err) {
+                console.log('Orientation lock failed:', err.message);
+                return false;
+            }
+        }
+
+        async function lockToCurrentPhysicalOrientation() {
+            if (!supportsScreenOrientationLock) return false;
+            try {
+                // 'any' lets the device's sensor drive rotation without a lock
+                await screen.orientation.lock('any');
+                return true;
+            } catch (err) {
+                console.log('Orientation lock failed:', err.message);
+                return false;
+            }
+        }
+
+        async function unlockOrientationIfPossible() {
+            if (!supportsScreenOrientationLock) return false;
+            try {
+                screen.orientation.unlock();
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        // ---- CSS fallback rotation (used when native lock unavailable) ----
+        function attachOrientationListener() {
+            if (orientationListenerAttached) return;
+            window.addEventListener('resize', handleOrientationChange);
+            window.addEventListener('orientationchange', handleOrientationChange);
+            orientationListenerAttached = true;
+        }
+
+        function detachOrientationListener() {
+            if (!orientationListenerAttached) return;
+            window.removeEventListener('resize', handleOrientationChange);
+            window.removeEventListener('orientationchange', handleOrientationChange);
+            orientationListenerAttached = false;
+        }
+
+        function handleOrientationChange() {
+            if (autoRotateEnabled) {
+                applyAutoRotationByCSS();
+            }
+        }
+
+        // ---- CSS rotation mechanics ----
+        function applyAutoRotationByCSS() {
+            // If device is in portrait but document best fits landscape, rotate the viewer.
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const shouldRotate = isPortrait;    // PDFs look better in landscape
+
+            if (shouldRotate) {
+                rotateWrapper(90);
+            } else {
+                rotateWrapper(0);
+            }
+        }
+
+        function applyManualRotation(deg) {
+            rotateWrapper(deg);
+        }
+
+        function rotateWrapper(deg) {
+            const container = document.getElementById('viewerContainer');
+            if (!container) return;
+
+            deg = ((deg % 360) + 360) % 360;
+
+            if (deg === 0) {
+                clearCSSRotation();
+                return;
+            }
+
+            // Apply rotation with width/height swap so the container fills the viewport
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            container.style.transformOrigin = 'top left';
+            container.style.transform = `rotate(${deg}deg)`;
+            container.style.position = 'fixed';
+
+            if (deg === 90) {
+                container.style.width = vh + 'px';
+                container.style.height = vw + 'px';
+                container.style.left = '0px';
+                container.style.top = '0px';
+            } else if (deg === 270) {
+                container.style.width = vh + 'px';
+                container.style.height = vw + 'px';
+                container.style.left = '0px';
+                container.style.top = (vw - vh) + 'px';
+            } else if (deg === 180) {
+                container.style.width = vw + 'px';
+                container.style.height = vh + 'px';
+                container.style.left = vw + 'px';
+                container.style.top = vh + 'px';
+            }
+
+            document.body.classList.toggle('rotated-landscape', deg === 90 || deg === 270);
+        }
+
+        function clearCSSRotation() {
+            const container = document.getElementById('viewerContainer');
+            if (!container) return;
+            container.style.transform = '';
+            container.style.transformOrigin = '';
+            container.style.width = '';
+            container.style.height = '';
+            container.style.left = '';
+            container.style.top = '';
+            container.style.position = '';
+            document.body.classList.remove('rotated-landscape');
+        }
+
+        // ---- React to native orientation changes ----
+        if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.addEventListener === 'function') {
+            screen.orientation.addEventListener('change', () => {
+                if (!autoRotateEnabled) return;
+                // If we're locked to 'any', no action needed — device handles rotation.
+                // If we used CSS fallback, we already responded to resize.
+            });
+        }
+
+        // ---- Toast helper (fallback if none is loaded) ----
+        function showToast(message, type = 'info') {
+            if (typeof toast === 'function') { toast(message, type); return; }
+            const el = document.createElement('div');
+            el.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 10px 18px;
+                border-radius: 8px;
+                color: #fff;
+                font-weight: 600;
+                font-size: 13px;
+                z-index: 9999;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#667eea'};
+                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+                max-width: 90%;
+                text-align: center;
+                pointer-events: none;
+                transition: opacity 0.3s;
+            `;
+            el.textContent = message;
+            document.body.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            }, 2200);
+        }
+
+        // ============================================================
+        // NAV / ZOOM
+        // ============================================================
+        function prevPage() {
+            if (pageNum > 1) {
+                pageNum--;
+                renderPage(pageNum);
+                if (annotationMode) toggleAnnotationMode();
+            }
+        }
+
+        function nextPage() {
+            if (pdfDoc && pageNum < pdfPageCount) {
+                pageNum++;
+                renderPage(pageNum);
+                if (annotationMode) toggleAnnotationMode();
+            }
+        }
+
+        function zoomIn() {
+            fitMode = 'custom';
+            scale = Math.min(scale + 0.15, 4.0);
+            renderPage(pageNum);
+        }
+
+        function zoomOut() {
+            fitMode = 'custom';
+            scale = Math.max(scale - 0.15, 0.1);
+            renderPage(pageNum);
+        }
+
+        function fitPage() { fitMode = 'page'; renderPage(pageNum); }
+        function fitWidth() { fitMode = 'width'; renderPage(pageNum); }
+
+        // ============================================================
+        // ACTIONS
+        // ============================================================
+        function downloadCurrentFile() {
+            if (!currentFile) { showToast('No file to download', 'error'); return; }
+            downloadFile(currentFile.id);
+        }
+
+        function showError(msg, isGlobal = false) {
+            if (isGlobal) {
+                pdfContainer.style.display = 'none';
+                mediaContentContainer.style.display = 'block';
+                mediaLoading.style.display = 'none';
+                mediaContent.style.display = 'none';
+                mediaError.style.display = 'flex';
+                mediaErrorMessage.textContent = msg;
+                document.getElementById('fileType').textContent = 'Error';
+                pdfToolbar.style.display = 'none';
+                pageCountDisplay.style.display = 'none';
+                annotationCountDisplay.style.display = 'none';
+            }
+        }
+
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (currentMediaType === 'pdf' && pdfDoc) renderPage(pageNum);
+            }, 200);
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'Escape' && sidebar.classList.contains('open')) return;
+            if (currentMediaType !== 'pdf') return;
+            switch (e.key) {
+                case 'ArrowRight': case 'ArrowDown':
+                    e.preventDefault(); nextPage(); break;
+                case 'ArrowLeft': case 'ArrowUp':
+                    e.preventDefault(); prevPage(); break;
+                case 'a': case 'A':
+                    if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleAnnotationMode(); }
+                    break;
+                case 'f': case 'F':
+                    if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleFullScreen(); }
+                    break;
+                case 'r': case 'R':
+                    if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleAutoRotate(); }
+                    break;
+                case 'l': case 'L':
+                    if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); rotateOnce(); }
+                    break;
+                case 'Escape':
+                    if (annotationMode) toggleAnnotationMode();
+                    break;
+            }
+        });
+
+        // ============================================================
+        // EXPOSE GLOBALS
+        // ============================================================
+        window.downloadCurrentFile = downloadCurrentFile;
+        window.prevPage = prevPage;
+        window.nextPage = nextPage;
+        window.zoomIn = zoomIn;
+        window.zoomOut = zoomOut;
+        window.fitPage = fitPage;
+        window.fitWidth = fitWidth;
+        window.toggleFullScreen = toggleFullScreen;
+        window.toggleAnnotationMode = toggleAnnotationMode;
+        window.clearAllAnnotations = clearAllAnnotations;
+        window.addAnnotation = addAnnotation;
+        window.deleteAnnotation = deleteAnnotation;
+        window.editAnnotation = editAnnotation;
+        window.handleLogout = handleLogout;
+        window.toggleAutoRotate = toggleAutoRotate;
+        window.rotateOnce = rotateOnce;
+
+        console.log('📄 SafeView loaded — Close button on LEFT, auto-rotate + fullscreen ready');
+    </script>
+</body>
+</html>

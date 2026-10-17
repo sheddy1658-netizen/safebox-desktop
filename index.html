@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SafeBox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading {
+            text-align: center;
+            color: white;
+        }
+        .loading .logo {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .loading h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .loading p {
+            font-size: 14px;
+            opacity: 0.5;
+            margin-top: 4px;
+        }
+        .spinner {
+            width: 30px;
+            height: 30px;
+            margin: 16px auto;
+            border: 3px solid rgba(255, 255, 255, 0.06);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <span class="logo">📦</span>
+        <h1>SafeBox</h1>
+        <p>Loading your secure file manager...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // ============================================
+        // REGISTER SERVICE WORKER
+        // ============================================
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(function(reg) {
+                    console.log('✅ Service Worker registered');
+                })
+                .catch(function(err) {
+                    console.warn('⚠️ SW registration failed:', err);
+                });
+        }
+
+        // ============================================
+        // REDIRECT TO LOGIN
+        // ============================================
+        // Use relative path - works in Android assets
+        window.location.href = 'login.html';
+    </script>
+</body>
+</html>

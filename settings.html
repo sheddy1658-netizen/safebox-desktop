@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Settings - SafeBox</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .settings-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .settings-card h3 {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .settings-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        .settings-card .value {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+        .settings-card .version-display {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .settings-card .sub-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .settings-card .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .settings-card .btn-group .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .settings-card .btn-group .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .settings-card .btn-group .btn-primary:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        .settings-card .btn-group .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .settings-card .btn-group .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .settings-card .btn-group .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .settings-card .btn-group .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .settings-card .btn-group .btn-danger:hover {
+            opacity: 0.85;
+        }
+        .settings-card .btn-group .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .settings-card .btn-group .btn-success:hover {
+            opacity: 0.85;
+        }
+        .settings-card .progress-bar-dark {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .settings-card .progress-bar-dark div {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        .settings-card .storage-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .settings-card .storage-stats .stat {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .settings-card .storage-stats .stat .num {
+            font-size: 18px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
+            display: block;
+        }
+        .settings-card .storage-stats .stat .lbl {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .settings-card .about-text {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.6;
+        }
+        .settings-card .about-text strong {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .settings-card .about-text .highlight {
+            color: #667eea;
+        }
+
+        /* ============================================
+           UPDATE CHECKER
+           ============================================ */
+        .update-status {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 10px;
+            border-left: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+        }
+        .update-status.show { display: flex; }
+        .update-status.checking {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+        }
+        .update-status.uptodate {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.08);
+            color: #34d399;
+        }
+        .update-status.available {
+            border-left-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            color: #a5b4fc;
+        }
+        .update-status.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+        }
+        .update-status .spinner-mini {
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .update-banner {
+            display: none;
+            margin-top: 12px;
+            padding: 14px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        .update-banner.show { display: block; }
+        .update-banner .ub-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #a5b4fc;
+            margin-bottom: 6px;
+        }
+        .update-banner .ub-notes {
+            font-size: 12.5px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .update-banner .ub-notes::-webkit-scrollbar { width: 5px; }
+        .update-banner .ub-notes::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+        .update-banner .ub-meta {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 10px;
+        }
+        .update-banner .ub-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .update-banner .ub-actions .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .update-banner .ub-actions .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .update-banner .ub-actions .btn-primary:hover { opacity: 0.85; }
+        .update-banner .ub-actions .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .update-banner .ub-actions .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .auto-check-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.55);
+        }
+        .auto-check-row input[type="checkbox"] {
+            accent-color: #667eea;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* ✅ Sidebar compat — LEFT side */
+        .app-container header { padding-left: 60px !important; padding-right: 14px !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>📦 SafeBox</h1>
+            <!-- ✅ Old nav removed — sidebar.js injects hamburger menu (left) -->
+        </header>
+
+        <main>
+            <h2>⚙️ Settings</h2>
+
+            <div class="settings-card">
+                <h3>📱 App Version</h3>
+                <span class="version-display" id="appVersion">v1.0.0</span>
+                <p class="sub-text">Current installed version</p>
+
+                <div class="btn-group">
+                    <button type="button" id="checkUpdateBtn" class="btn btn-primary">
+                        🔄 Check for Updates
+                    </button>
+                </div>
+
+                <div id="updateStatus" class="update-status">
+                    <span class="spinner-mini" id="updateSpinner" style="display:none;"></span>
+                    <span id="updateStatusText">Checking…</span>
+                </div>
+
+                <div id="updateBanner" class="update-banner">
+                    <div class="ub-title" id="updateBannerTitle">🎉 Update Available</div>
+                    <div class="ub-meta" id="updateBannerMeta"></div>
+                    <div class="ub-notes" id="updateNotes"></div>
+                    <div class="ub-actions">
+                        <button type="button" id="downloadUpdateBtn" class="btn btn-primary">
+                            ⬇️ Download & Install
+                        </button>
+                        <button type="button" id="skipUpdateBtn" class="btn btn-secondary">
+                            Skip this version
+                        </button>
+                    </div>
+                </div>
+
+                <label class="auto-check-row">
+                    <span>Check automatically on app open</span>
+                    <input type="checkbox" id="autoCheckToggle" checked>
+                </label>
+            </div>
+
+            <div class="settings-card">
+                <h3>💾 Storage</h3>
+                <div id="storageInfo">
+                    <p style="color:rgba(255,255,255,0.3);">Loading...</p>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3>👤 Account</h3>
+                <p><strong style="color:rgba(255,255,255,0.4);">Username:</strong> <span class="value" id="settingsUsername">Not logged in</span></p>
+                <div class="btn-group">
+                    <button onclick="logoutUser()" class="btn btn-danger">🚪 Logout</button>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3>ℹ️ About</h3>
+                <div class="about-text">
+                    <strong>SafeBox</strong> - Secure Offline File Manager<br>
+                    All data stored locally in IndexedDB<br>
+                    No internet required for core features<br>
+                    <br>
+                    🔒 Your files are stored privately on your device.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/indexeddb.js"></script>
+    <script src="js/updater.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(msg, type) {
+            if (typeof toast === 'function') { toast(msg, type); return; }
+            alert(msg);
+        }
+
+        // ============================================
+        // STORAGE INFO
+        // ============================================
+        async function loadStorageInfo() {
+            const user = getCurrentUser();
+            if (!user) {
+                document.getElementById('storageInfo').innerHTML = `
+                    <p style="color:rgba(255,255,255,0.3);">Please login to view storage info</p>
+                `;
+                return;
+            }
+
+            try {
+                if (typeof getStorageInfo !== 'function') {
+                    throw new Error('getStorageInfo not available');
+                }
+
+                const storage = await getStorageInfo(user.id);
+                if (storage) {
+                    document.getElementById('storageInfo').innerHTML = `
+                        <div class="storage-stats">
+                            <div class="stat">
+                                <span class="num">${storage.usedGB.toFixed(1)} GB</span>
+                                <span class="lbl">Used</span>
+                            </div>
+                            <div class="stat">
+                                <span class="num">${storage.limitGB.toFixed(0)} GB</span>
+                                <span class="lbl">Limit</span>
+                            </div>
+                            <div class="stat">
+                                <span class="num">${storage.remainingGB.toFixed(1)} GB</span>
+                                <span class="lbl">Remaining</span>
+                            </div>
+                            <div class="stat">
+                                <span class="num">${Math.round(storage.percentage)}%</span>
+                                <span class="lbl">Used</span>
+                            </div>
+                        </div>
+                        <div class="progress-bar-dark">
+                            <div style="width:${Math.min(storage.percentage, 100)}%;"></div>
+                        </div>
+                        <p class="sub-text" style="margin-top:6px;">
+                            ${storage.percentage > 80 ? '⚠️ Storage is running low!' : '✅ Storage healthy'}
+                        </p>
+                    `;
+                } else {
+                    document.getElementById('storageInfo').innerHTML = `
+                        <p style="color:rgba(255,255,255,0.3);">Storage info not available</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Storage info error:', error);
+                document.getElementById('storageInfo').innerHTML = `
+                    <p style="color:#ef4444;">❌ Error loading storage info: ${error.message}</p>
+                `;
+            }
+        }
+
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function logoutUser() {
+            if (typeof window.logoutUser === 'function' && window.logoutUser !== logoutUser) {
+                window.logoutUser();
+            } else {
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                localStorage.removeItem('user_session');
+                sessionStorage.removeItem('user_session');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ============================================
+        // UPDATE CHECKER
+        // ============================================
+
+        const UPDATE_CHECK_URL = 'https://allapp.nport.link/safe-box/version.json';
+        const FALLBACK_APK_URL = 'https://allapp.nport.link/safe-box/safebox.apk';
+
+        const CURRENT_VERSION = (localStorage.getItem('app_version') || '1.0.0');
+
+        function cmpVersions(a, b) {
+            const pa = String(a).replace(/^v/i, '').split('.').map(n => parseInt(n) || 0);
+            const pb = String(b).replace(/^v/i, '').split('.').map(n => parseInt(n) || 0);
+            const len = Math.max(pa.length, pb.length);
+            for (let i = 0; i < len; i++) {
+                const x = pa[i] || 0;
+                const y = pb[i] || 0;
+                if (x > y) return 1;
+                if (x < y) return -1;
+            }
+            return 0;
+        }
+
+        function setUpdateStatus(state, text) {
+            const el  = document.getElementById('updateStatus');
+            const txt = document.getElementById('updateStatusText');
+            const sp  = document.getElementById('updateSpinner');
+            if (!el) return;
+            el.className = 'update-status show ' + (state || '');
+            if (txt) txt.textContent = text;
+            if (sp) sp.style.display = state === 'checking' ? 'inline-block' : 'none';
+        }
+
+        function hideUpdateStatus() {
+            const el = document.getElementById('updateStatus');
+            if (el) el.className = 'update-status';
+        }
+
+        function showUpdateBanner(info) {
+            const banner = document.getElementById('updateBanner');
+            const title  = document.getElementById('updateBannerTitle');
+            const meta   = document.getElementById('updateBannerMeta');
+            const notes  = document.getElementById('updateNotes');
+            if (!banner) return;
+
+            if (title) {
+                title.textContent = info.forceUpdate
+                    ? `⚠️ Required update — v${info.version}`
+                    : `🎉 Update v${info.version} available`;
+            }
+            if (meta) {
+                const parts = [];
+                if (info.fileSize)    parts.push(info.fileSize);
+                if (info.releaseDate) parts.push(info.releaseDate);
+                meta.textContent = parts.join(' • ');
+            }
+            if (notes) {
+                notes.textContent = info.notes || 'A new version is ready to install.';
+            }
+            banner.classList.add('show');
+            banner.dataset.version = info.version;
+            banner.dataset.url = info.url || FALLBACK_APK_URL;
+        }
+
+        function hideUpdateBanner() {
+            const b = document.getElementById('updateBanner');
+            if (b) b.classList.remove('show');
+        }
+
+        // ✅ NO custom headers → simple CORS request → no preflight → no CORS block
+        async function fetchLatestVersionInfo() {
+            // First try to use the app's apiFetch, which routes through index.php
+            // and has CORS handled by the backend.
+            if (typeof apiFetch === 'function') {
+                try {
+                    const res = await apiFetch('latest_version', { method: 'GET' });
+                    if (res && res.ok) {
+                        const data = await res.json();
+                        if (data && (data.version || data.latest_version)) {
+                            return {
+                                version:     String(data.version || data.latest_version).replace(/^v/i, ''),
+                                notes:       data.releaseNotes || data.notes || data.changelog || '',
+                                url:         data.downloadUrl || data.url || data.apk_url || FALLBACK_APK_URL,
+                                fileSize:    data.fileSize || '',
+                                forceUpdate: !!data.forceUpdate,
+                                minVersion:  String(data.minVersion || '').replace(/^v/i, ''),
+                                releaseDate: data.releaseDate || ''
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.warn('apiFetch latest_version failed, falling back to static fetch:', e.message);
+                }
+            }
+
+            // Fallback: plain fetch of the static version.json
+            // NOTE: no custom headers — avoids CORS preflight entirely
+            const res = await fetch(UPDATE_CHECK_URL + '?t=' + Date.now(), {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+
+            const data = await res.json();
+            const version = data.version || data.latest_version || null;
+            if (!version) throw new Error('version.json has no version field');
+
+            return {
+                version:     String(version).replace(/^v/i, ''),
+                notes:       data.releaseNotes || data.notes || data.changelog || '',
+                url:         data.downloadUrl || data.url || data.apk_url || FALLBACK_APK_URL,
+                fileSize:    data.fileSize || '',
+                forceUpdate: !!data.forceUpdate,
+                minVersion:  String(data.minVersion || '').replace(/^v/i, ''),
+                releaseDate: data.releaseDate || ''
+            };
+        }
+
+        // ✅ Internal function — NOT reassigned on window
+        async function checkForUpdates({ silent = false } = {}) {
+            const btn = document.getElementById('checkUpdateBtn');
+            if (btn) btn.disabled = true;
+
+            hideUpdateBanner();
+            if (!silent) setUpdateStatus('checking', 'Checking for updates…');
+
+            try {
+                const info = await fetchLatestVersionInfo();
+                const needsUpdate = cmpVersions(info.version, CURRENT_VERSION) > 0;
+
+                if (!needsUpdate) {
+                    if (!silent) {
+                        setUpdateStatus('uptodate', `You're on the latest version (v${CURRENT_VERSION})`);
+                    }
+                    return { hasUpdate: false };
+                }
+
+                const skipped = localStorage.getItem('skipped_version');
+
+                if (silent && !info.forceUpdate && skipped === info.version) {
+                    return { hasUpdate: true, info, suppressed: true };
+                }
+
+                const label = info.fileSize
+                    ? `New version available: v${info.version} (${info.fileSize})`
+                    : `New version available: v${info.version}`;
+                setUpdateStatus('available', label);
+
+                showUpdateBanner(info);
+
+                const dlBtn = document.getElementById('downloadUpdateBtn');
+                if (dlBtn) {
+                    dlBtn.textContent = info.fileSize
+                        ? `⬇️ Download (${info.fileSize})`
+                        : '⬇️ Download & Install';
+
+                    dlBtn.onclick = () => {
+                        if (window.appUpdater && typeof window.appUpdater.downloadUpdate === 'function') {
+                            window.appUpdater.downloadUpdate(info.url);
+                        } else if (window.Android && typeof window.Android.downloadApk === 'function') {
+                            window.Android.downloadApk(info.url);
+                        } else {
+                            window.open(info.url, '_blank');
+                        }
+                    };
+                }
+
+                const skip = document.getElementById('skipUpdateBtn');
+                if (skip) skip.style.display = info.forceUpdate ? 'none' : '';
+
+                return { hasUpdate: true, info };
+            } catch (err) {
+                console.warn('Update check failed:', err);
+                if (!silent) setUpdateStatus('error', 'Update check failed: ' + err.message);
+                return { hasUpdate: false, error: err.message };
+            } finally {
+                if (btn) btn.disabled = false;
+                if (!silent) setTimeout(() => hideUpdateStatus(), 6000);
+            }
+        }
+
+        function wireUpdater() {
+            const btn = document.getElementById('checkUpdateBtn');
+            // ✅ Call the internal function directly
+            if (btn) btn.addEventListener('click', () => checkForUpdates({ silent: false }));
+
+            const skip = document.getElementById('skipUpdateBtn');
+            if (skip) skip.addEventListener('click', () => {
+                const banner = document.getElementById('updateBanner');
+                const v = banner?.dataset.version;
+                if (v) localStorage.setItem('skipped_version', v);
+                hideUpdateBanner();
+                hideUpdateStatus();
+            });
+
+            const toggle = document.getElementById('autoCheckToggle');
+            if (toggle) {
+                const stored = localStorage.getItem('auto_check_updates');
+                toggle.checked = stored === null ? true : stored === '1';
+                toggle.addEventListener('change', () => {
+                    localStorage.setItem('auto_check_updates', toggle.checked ? '1' : '0');
+                });
+            }
+        }
+
+        // ✅ Expose with a different name to prevent any self-recursion
+        window.runUpdateCheck = () => checkForUpdates({ silent: false });
+        function enableAutoCheck()  { localStorage.setItem('auto_check_updates', '1'); }
+        function disableAutoCheck() { localStorage.setItem('auto_check_updates', '0'); }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            const usernameEl = document.getElementById('settingsUsername');
+            if (usernameEl) {
+                usernameEl.textContent = user ? user.username : 'Not logged in';
+            }
+
+            // Sync installed version — prefer native bridge if available
+            (function syncAppVersion() {
+                let version = localStorage.getItem('app_version');
+
+                if (window.Android && typeof window.Android.getVersion === 'function') {
+                    try {
+                        const native = window.Android.getVersion();
+                        if (native && native !== version) {
+                            version = String(native);
+                            localStorage.setItem('app_version', version);
+                            console.log('📱 Synced app_version from native:', version);
+                        }
+                    } catch (e) {}
+                }
+
+                if (!version) {
+                    version = '1.0.0';
+                    localStorage.setItem('app_version', version);
+                }
+
+                const el = document.getElementById('appVersion');
+                if (el) el.textContent = 'v' + version;
+            })();
+
+            loadStorageInfo();
+            wireUpdater();
+
+            // Auto-check on load — silent by default
+            const autoCheck = localStorage.getItem('auto_check_updates');
+            const autoEnabled = autoCheck === null ? true : autoCheck === '1';
+
+            if (autoEnabled) {
+                setTimeout(() => {
+                    checkForUpdates({ silent: true }).then(result => {
+                        if (result?.suppressed) {
+                            hideUpdateBanner();
+                            hideUpdateStatus();
+                        }
+                    });
+                }, 400);
+            }
+        });
+
+        // Refresh storage on tab focus
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) loadStorageInfo();
+        });
+
+        console.log('⚙️ Settings page loaded');
+    </script>
+</body>
+</html>
